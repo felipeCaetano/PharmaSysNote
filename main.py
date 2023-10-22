@@ -173,6 +173,11 @@ class PharmaSysNoteApp(UserControl):
                   Tab(text="Quinta"), Tab(text='Sexta'), Tab(text='Sábado'),
                   Tab(text="Domingo")]
         )
+        self.filter.selected_index = self.get_tab_day()
+        for i in range(self.filter.selected_index+1, 7):
+            print(i)
+            self.filter.tabs[i].disabled = True
+
         self.anotations = Column()  # NOQA
         rail = ft.NavigationRail(
             selected_index=0,
@@ -344,6 +349,11 @@ class PharmaSysNoteApp(UserControl):
         now = datetime.now()
         timestamp = now.strftime("%d/%m/%Y, %H:%M:%S")
         return timestamp
+
+    def get_tab_day(self):
+        now = datetime.now()
+        return now.weekday()
+
 
 
 def main(page: ft.Page):
