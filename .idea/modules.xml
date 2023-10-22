@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/PharmaSysNotes.iml" filepath="$PROJECT_DIR$/.idea/PharmaSysNotes.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/PharmaSysNote.iml" filepath="$PROJECT_DIR$/.idea/PharmaSysNote.iml" />
     </modules>
   </component>
 </project>
