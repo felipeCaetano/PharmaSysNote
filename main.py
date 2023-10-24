@@ -1,7 +1,7 @@
 import flet as ft
 from flet_core import Row
 
-from pharmasysapp import PharmaSysNoteApp
+from pharmasysapp import pharma_sys_note_app
 
 
 def main(page: ft.Page):
@@ -14,7 +14,7 @@ def main(page: ft.Page):
             center_title=False,
             bgcolor=ft.colors.SURFACE_VARIANT)
     # app = PharmaSysNoteApp(page)
-    PharmaSysNoteApp(page)
+    pharma_sys_note_app(page)
     page.update()
 
 

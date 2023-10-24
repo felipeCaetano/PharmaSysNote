@@ -100,5 +100,4 @@ class Anotation(UserControl):
         self.task_edit(self)
 
     def save_clicked(self, e: ControlEvent):
-        print(e.control, self.item_value_field.value)
         self.task_save(self)

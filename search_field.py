@@ -7,9 +7,9 @@ from annotation import Anotation
 class SearchField(UserControl):
     anotation = Column()
 
-    def __init__(self, anotations):
+    def __init__(self, callback):
         super(SearchField, self).__init__()
-        self.anotation = anotations
+        self.callback = callback
         self.search_field = TextField(
             text_align=TextAlign.LEFT,
             hint_text="Digite ou Pesquise",
@@ -48,7 +48,7 @@ class SearchField(UserControl):
             controls=[self.search_field,
                       FloatingActionButton(
                           icon=icons.ADD,
-                          on_click=add_clicked
+                          on_click=self.callback
                       )
                       ],
         )
