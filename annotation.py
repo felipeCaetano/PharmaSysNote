@@ -1,6 +1,7 @@
 import flet as ft
 from flet_core import UserControl, Text, TextField, KeyboardType, Column, Row, \
-    MainAxisAlignment, CrossAxisAlignment, IconButton, icons, colors
+    MainAxisAlignment, CrossAxisAlignment, IconButton, icons, colors, \
+    ControlEvent
 
 
 class Anotation(UserControl):
@@ -98,5 +99,6 @@ class Anotation(UserControl):
     def edit_clicked(self, e):
         self.task_edit(self)
 
-    def save_clicked(self, e):
+    def save_clicked(self, e: ControlEvent):
+        print(e.control, self.item_value_field.value)
         self.task_save(self)
