@@ -1,11 +1,12 @@
 import flet as ft
-from flet_core import UserControl, Text, TextField, KeyboardType, Column, Row, \
-    MainAxisAlignment, CrossAxisAlignment, IconButton, icons, colors, \
-    ControlEvent
+from flet_core import (UserControl, Text, TextField, KeyboardType, Column, Row,
+                       MainAxisAlignment, CrossAxisAlignment, IconButton,
+                       icons, colors,
+                       ControlEvent)
 
 
 class Anotation(UserControl):
-    def __init__(self, task_save, task_edit, task_delete, field_change):
+    def __init__(self, task_save, task_edit, task_delete):
         super(Anotation, self).__init__()
         self.item_value = Text()
         self.item_presentation = Text()
@@ -13,16 +14,12 @@ class Anotation(UserControl):
         self.item_name = Text()
         self.timestamp = Text()
         self.item_name_field = TextField(label="Nome do Produto")
-        self.item_count_field = TextField(
-            label="Quantidade",
-            keyboard_type=KeyboardType.NUMBER,
-            width=150,
-            on_change=self.field_change)
-        self.item_value_field = TextField(
-            label="valor",
-            keyboard_type=KeyboardType.NUMBER,
-            width=150,
-            on_change=self.field_change)
+        self.item_count_field = TextField(label="Quantidade",
+                                          keyboard_type=KeyboardType.NUMBER,
+                                          width=150)
+        self.item_value_field = TextField(label="valor",
+                                          keyboard_type=KeyboardType.NUMBER,
+                                          width=150)
         self.item_presentation_field = ft.Dropdown(
             label="Apresentação",
             hint_text="Apresentação",
@@ -37,7 +34,6 @@ class Anotation(UserControl):
         self.task_save = task_save
         self.task_edit = task_edit
         self.task_delete = task_delete
-        self.field_change = field_change
         self.value_changed = False
         self.item_changed = False
 
@@ -58,7 +54,12 @@ class Anotation(UserControl):
         ],
             visible=False)
 
-        self.edit_view = Row(  # NOQA
+        self.control_buttons = self.create_control_buttons()    # NOQA
+        return Row(controls=[self.view, self.saved_view, self.control_buttons],
+                   expand=True)
+
+    def create_control_buttons(self):
+        return Row(
             alignment=MainAxisAlignment.SPACE_BETWEEN,
             vertical_alignment=CrossAxisAlignment.CENTER,
             controls=[
@@ -84,11 +85,6 @@ class Anotation(UserControl):
                 )
             ]
         )
-        return Row(controls=[self.view, self.saved_view, self.edit_view],
-                   expand=True)
-
-    def field_change(self, e):
-        self.field_change(self, e)
 
     def add_clicked(self, e):
         ...

@@ -1,27 +1,26 @@
-from flet_core import UserControl, TextField, TextAlign, IconButton, icons, \
-    Row, FloatingActionButton, Column
-
-from annotation import Anotation
+from flet_core import (UserControl, TextField, TextAlign, IconButton, icons,
+                       Row, FloatingActionButton, Column)
 
 
 class SearchField(UserControl):
-    anotation = Column()
+    # anotation = Column()
 
-    def __init__(self, callback):
+    def __init__(self, callback, search_engine):
         super(SearchField, self).__init__()
         self.callback = callback
+        self.search_function = search_engine
         self.search_field = TextField(
             text_align=TextAlign.LEFT,
             hint_text="Digite ou Pesquise",
             suffix=IconButton(icon=icons.SEARCH,
-                              # on_click=self.app.search_item_clicked
+                              on_click=self.search_function
                               ),
             # on_change=self.app.searchbox_changed,
             expand=True
         )
 
     def anotation_save(self, e):
-        print("depois eu")
+        pass
 
     def anotation_edit(self, e):
         pass
@@ -33,18 +32,7 @@ class SearchField(UserControl):
         pass
 
     def build(self):
-        def add_clicked(e):
-            print("clicou no mais")
-            anotacao = Anotation(
-                self.anotation_save, self.anotation_edit,
-                self.anotation_delete, self.field_change
-            )
-            anotacao.item_name_field.value = self.search_field.value  # search_field.value
-            self.anotation.controls.append(anotacao)
-            self.anotation.update()
-            self.update()
-
-        self.view = Row(
+        self.view = Row(  # NOQA
             controls=[self.search_field,
                       FloatingActionButton(
                           icon=icons.ADD,

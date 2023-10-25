@@ -1,5 +1,4 @@
 import flet as ft
-from flet_core import Row
 
 from pharmasysapp import pharma_sys_note_app
 
@@ -13,7 +12,6 @@ def main(page: ft.Page):
             title=ft.Text("Anotador do PharmaSys"),
             center_title=False,
             bgcolor=ft.colors.SURFACE_VARIANT)
-    # app = PharmaSysNoteApp(page)
     pharma_sys_note_app(page)
     page.update()
 
