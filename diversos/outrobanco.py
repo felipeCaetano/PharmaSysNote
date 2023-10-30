@@ -1,37 +1,39 @@
-import flet
 from flet import *
+from useraction_table import create_table
+from datatable import my_table, tb, calldb, conn
 import sqlite3
-from datatable import mytable
-
 
 
 def main(page: Page):
     create_table()
     page.scroll = "auto"
+
     def add_input(event):
         inputcon.offset = transform.Offset(0, 0)
         page.update()
 
     def hidecon(event):
-        inputcon.offset = transform.Offset(0, 0)
+        inputcon.offset = transform.Offset(2, 0)
         page.update()
 
     def savedata(event):
         try:
             c = conn.cursor()
             c.execute(
-                """INSERT INTO USERS (name, age, contact, email, address, gender)
-                VALUES(?,?,?,?,?,?)""", (
-                name.value, age.value, contact.value, email.value,
-                address.value, gender.value)
+                "INSERT INTO USERS (name, age, contact, email, address, gender) VALUES(?,?,?,?,?,?)",
+                (name.value, age.value, contact.value, email.value,
+                 address.value, gender.value)
             )
             conn.commit()
-        except Exception as e:
-            print(e)
             inputcon.offset = transform.Offset(2, 0)
             page.snack_bar = SnackBar(Text("Sucess Input"), bgcolor='green')
             page.snack_bar.open = True
+            tb.rows.clear()
+            calldb()
+            tb.update()
             page.update()
+        except Exception as e:
+            print(e)
 
     name = TextField(label="Nome")
     age = TextField(label="age")
@@ -44,15 +46,16 @@ def main(page: Page):
     ]))
 
     inputcon = Card(
-        offset=transform.Offset(3, 0),
-        animate_offset=animation.Animation(600, curve=easyIn),
+        offset=transform.Offset(2, 0),
+        animate_offset=animation.Animation(600, curve="easeIn"),
         elevation=30,
         content=Container(
-            Row([
-                Text("add dados", size=20, weight="bold"),
-                IconButton(
-                    icon="Sair", icon_size=30, on_click=hidecon
-                ),
+            bgcolor="green200",
+            content=Column([
+                Row([
+                    Text("Novo Cadastro", size=20, weight="bold"),
+                    IconButton(icon="close", icon_size=30, on_click=hidecon)
+                ]),
                 name,
                 contact,
                 age,
@@ -60,7 +63,8 @@ def main(page: Page):
                 email,
                 address,
                 FilledButton("Salvar", on_click=savedata)
-            ])
+            ]
+            )
         )
     )
 
@@ -68,11 +72,11 @@ def main(page: Page):
         Column([
             Text("CADASTRAR USUÁRIOS", size=30, weight='bold'),
             ElevatedButton("Cadastrar", on_click=add_input),
-            mytable,
+            my_table,
             inputcon
         ]
         )
     )
 
 
-flet.app(target=main)
+app(target=main)

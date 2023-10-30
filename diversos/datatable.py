@@ -2,7 +2,7 @@ from flet import (
     DataTable, DataColumn, Text, Column, Row, DataRow, DataCell, Container,
     IconButton, TextField, RadioGroup, Radio, ElevatedButton)
 import sqlite3
-import useraction_table
+
 conn = sqlite3.connect("db/dbcad.db", check_same_thread=False)
 
 tb = DataTable(
@@ -22,26 +22,27 @@ id_edit = Text()
 name_edit = TextField(label="Nome")
 age_edit = TextField(label="age")
 contact_edit = TextField(label="contact")
-email_edit = TextField(label="email")
-address_edit = TextField(label="address")
 gender_edit = RadioGroup(content=Column([
     Radio(value='M', label="Masculino"),
     Radio(value='F', label="Feminino")
 ]))
+email_edit = TextField(label="email")
+address_edit = TextField(label="address")
 
 
 def hidedlg(event):
     dlg.visible = False
     dlg.update()
 
+
 def saveandupdate(event):
     try:
         myid = id_edit.value
         c = conn.cursor()
         c.execute(
-            "UPDATE users name=?, contact=?, age=?, gender=?,email=?, address=? WHERE id=?",
+            "UPDATE users SET name=?, contact=?, age=?, gender=?, email=?, address=? WHERE id=?",
             (name_edit.value, contact_edit.value, age_edit.value,
-             gender_edit.value,email_edit.value, address_edit.value, myid)
+             gender_edit.value, email_edit.value, address_edit.value, myid)
         )
         conn.commit()
         tb.rows.clear()
@@ -55,25 +56,36 @@ def saveandupdate(event):
 
 
 def showdelete(event):
-    pass
+    try:
+        myid = int(event.control.data)
+        c = conn.cursor()
+        c.execute("DELETE FROM users WHERE id=?", (myid,))
+        conn.commit()
+        print('deletado com sucesso')
+        tb.rows.clear()
+        calldb()
+        tb.update()
+    except:
+        print(e)
+
 
 dlg = Container(
-    bgcolor='green',
+    bgcolor='green200',
     padding=10,
-    content=Row([
-        Text("Editar Dados", size=20, weight='bold'),
-        IconButton(icon="Close", on_click=hidedlg)
-    ],
+    content=Column([
+        Row([
+            Text("Editar Cadastros", size=30, weight='bold'),
+            IconButton(icon="Close", on_click=hidedlg)],
+            alignment="spaceBetween"),
         name_edit,
         age_edit,
         contact_edit,
-        Text("selecione sexo", size=20),
+        Text("selecione Sexo", size=20, weight='bold'),
         gender_edit,
         email_edit,
         address_edit,
-        ElevatedButton("Salvar", on_click=saveandupdate)
+        ElevatedButton("Atualizar", on_click=saveandupdate)]
     )
-
 )
 
 
@@ -96,26 +108,20 @@ def calldb():
     users = c.fetchall()
     print(users)
 
-    if not users:
+    if not users == "":
         keys = ["id", "name", "contact", "age", "email", "address", "gender"]
 
         result = [dict(zip(keys, values)) for values in users]
         for x in result:
             tb.rows.append(DataRow(
-                cells=[
-                    DataCell(Row([
+                cells=[DataCell(
+                    Row([
                         IconButton(
-                            icon="Criar Cadastro",
-                            icon_color="green",
-                            data=x['id'],
-                            on_click=showedit
-                        ),
+                            icon="create", icon_color="green", data=x,
+                            on_click=showedit),
                         IconButton(
-                            icon="Deletar",
-                            icon_color="red",
-                            data=x['id'],
-                            on_click=showdelete
-                        )
+                            icon="delete", icon_color="red", data=x['id'],
+                            on_click=showdelete)
                     ])
                     ),
                     DataCell(Text(x["name"])),
@@ -132,5 +138,5 @@ def calldb():
 calldb()
 dlg.visible = False
 my_table = Column(
-    [Row([tb], scroll="always")]
+    [dlg, Row([tb], scroll="always")]
 )

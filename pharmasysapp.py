@@ -36,16 +36,18 @@ def pharma_sys_note_app(page: Page):
         dlg_modal = ft.AlertDialog(
             modal=True,
             title=ft.Container(
-                content=ft.Text("Por favor,  CONFIRME:"),
+                content=ft.Text("Por favor,  CONFIRME:", size=15),
                 bgcolor=ft.colors.BLUE_GREY_200,
-                padding=0,
+                padding=10,
                 expand=True,
                 border_radius=0,
                 border=ft.border.all(1, ft.colors.BLUE_GREY_200)),
-            content=ft.Text("Você realmente deseja deletar esse item?"),
+            content=ft.Text("Você realmente deseja deletar esse item?",
+                            weight='bold'),
             actions=[
-                ft.TextButton("Sim", on_click=delete_anotation),
-                ft.TextButton("Não", on_click=close_dlg),
+                ft.ElevatedButton("Sim", style=ft.ButtonStyle(color='red'),
+                              on_click=delete_anotation),
+                ft.ElevatedButton("Não", on_click=close_dlg),
             ],
             actions_alignment=ft.MainAxisAlignment.END,
             title_padding=1,
