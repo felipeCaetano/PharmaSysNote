@@ -2,7 +2,8 @@ from datetime import datetime
 
 import flet as ft
 from flet_core import (
-    Page, icons, Tabs, Tab, Column, IconButton, Row, TextField, ControlEvent)
+    Page, icons, Tabs, Tab, Column, IconButton, Row, TextField, ControlEvent, DataTable, DataColumn, Text, DataRow,
+    DataCell, Container)
 
 from annotation import Anotation
 from search_field import SearchField
@@ -10,6 +11,7 @@ from search_field import SearchField
 days_of_week = [
     'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo'
 ]
+
 
 
 def is_not_empty_fields(line):
@@ -29,7 +31,7 @@ def pharma_sys_note_app(page: Page):
             dlg_modal.open = False
             index = day_filter.selected_index
             tab_of_day = day_filter.tabs[index]
-            tab_of_day.content.controls[1].controls.remove(anotation)
+            tab_of_day.content.controls[2].controls.remove(anotation)
             anotation.update()
             page.update()
 
@@ -134,14 +136,22 @@ def pharma_sys_note_app(page: Page):
     # def tabs_changed(e):
     #     ...
 
-    def create_line(e):
+    def create_line(e: ControlEvent):
+        print("fui chamado por", e.control)
+
         index = day_filter.selected_index
         anotacao = Anotation(anotation_save, anotation_edit, anotation_delete)
         tab_of_day = day_filter.tabs[index]
         search_field = tab_of_day.content.controls[0]
+
+        tab_of_day.content.controls[1].visible = True
         anotacao.item_name_field.value = search_field.search_field.value
-        tab_of_day.content.controls[1].controls.append(anotacao)
-        tab_of_day.content.controls[1].update()
+        #tab_of_day.content.controls[1].update()
+        tab_of_day.content.controls[2].controls.append(anotacao)
+        #tab_of_day.content.controls[2].update()
+        #tab_of_day.update()
+        page.update()
+
 
     def get_timestamp():
         now = datetime.now()
@@ -210,11 +220,13 @@ def create_nav_rail():
 
 
 def create_day_filter_tabs(create_line, day_filter):
+    print("create_day_filter_tabs")
     for i in range(7):
         anotations = Column()
         tab = Tab(
             text=days_of_week[i],
             content=Column([SearchField(create_line, search_engine),
+                            Container(content=head_table, visible=False, bgcolor='blue'),
                             ft.ListView(
                                 expand=1,
                                 spacing=10,

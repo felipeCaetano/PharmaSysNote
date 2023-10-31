@@ -2,19 +2,7 @@ from flet_core import (UserControl, TextField, TextAlign, IconButton, icons,
                        Row, FloatingActionButton, Column, DataTable,
                        DataColumn, Text)
 
-head_table = DataTable(
-    columns=[
 
-        DataColumn(Text("Data e Hora")),
-        DataColumn(Text("Nome do Produto")),
-        DataColumn(Text("Quantidade")),
-        DataColumn(Text("Apresentação")),
-        DataColumn(Text("Valor Unitário")),
-        DataColumn(Text("Ações")),
-    ],
-    rows=[],
-    visible=False
-)
 
 
 class SearchField(UserControl):
@@ -47,11 +35,8 @@ class SearchField(UserControl):
         pass
 
     def build(self):
-        self.view = Column([
-            Row([
+        self.view = Row([
                 self.search_field,
                 FloatingActionButton(icon=icons.ADD, on_click=self.callback)
-            ]),
-            head_table]
-        )
+            ])
         return self.view
