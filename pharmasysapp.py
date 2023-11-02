@@ -144,10 +144,10 @@ def pharma_sys_note_app(page: Page):
         tab_of_day = day_filter.tabs[index]
         search_field = tab_of_day.content.controls[0]
 
-        tab_of_day.content.controls[1].visible = True
+        # tab_of_day.content.controls[1].visible = True
         anotacao.item_name_field.value = search_field.search_field.value
         #tab_of_day.content.controls[1].update()
-        tab_of_day.content.controls[2].controls.append(anotacao)
+        tab_of_day.content.controls[1].controls.append(anotacao)
         #tab_of_day.content.controls[2].update()
         #tab_of_day.update()
         page.update()
@@ -226,7 +226,7 @@ def create_day_filter_tabs(create_line, day_filter):
         tab = Tab(
             text=days_of_week[i],
             content=Column([SearchField(create_line, search_engine),
-                            Container(content=head_table, visible=False, bgcolor='blue'),
+                            # Container(content=head_table, visible=False, bgcolor='blue'),
                             ft.ListView(
                                 expand=1,
                                 spacing=10,
