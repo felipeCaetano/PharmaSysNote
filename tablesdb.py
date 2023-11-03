@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine, String, ForeignKey, Integer
+from sqlalchemy import create_engine, String, ForeignKey, Integer, Float
 from sqlalchemy.orm import DeclarativeBase
 
 engine = create_engine("sqlite+pysqlite:///:memory:", echo=True)
@@ -11,6 +11,24 @@ class Base(DeclarativeBase):
 from sqlalchemy.orm import Mapped
 from sqlalchemy.orm import mapped_column
 from sqlalchemy.orm import relationship
+
+import sqlite3
+
+conn = sqlite3.connect("diversos/db/dbpharm.db", check_same_thread=False)
+
+
+class Itens(Base):
+    __tablename__ = "item_sales"
+    id = mapped_column(Integer, primary_key=True)
+    timestamp = mapped_column(String(20), nullable=False)
+    name = mapped_column(String(30), nullable=False)
+    count = mapped_column(Integer, nullable=False)
+    presentation = mapped_column(String(15), nullable=False)
+    value = mapped_column(Float, nullable=False)
+
+    def __repr__(self) -> str:
+        return f"Item(id={self.id!r}, name={self.name!r}, count={self.count!r}," \
+               f"presentation{self.presentation}, value={self.value})"
 
 
 class User(Base):
@@ -34,4 +52,19 @@ class Address(Base):
     def __repr__(self) -> str:
         return f"Address(id={self.id!r}, email_address={self.email_address!r})"
 
+
 Base.metadata.create_all(engine)
+
+
+def create_table():
+    c = conn.cursor()
+    c.execute("""CREATE TABLE IF NOT EXISTS items (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT,
+    presetation TEXT,
+    count INTEGER,
+    timestamp TEXT,
+    value FLOAT)
+    """)
+
+    conn.commit()

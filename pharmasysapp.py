@@ -2,16 +2,17 @@ from datetime import datetime
 
 import flet as ft
 from flet_core import (
-    Page, icons, Tabs, Tab, Column, IconButton, Row, TextField, ControlEvent, DataTable, DataColumn, Text, DataRow,
-    DataCell, Container)
+    Page, icons, Tabs, Tab, Column, IconButton, Row, TextField, ControlEvent,
+    DataTable, DataColumn, Text, DataRow,
+    DataCell, Container, SnackBar)
 
 from annotation import Anotation
 from search_field import SearchField
+from tablesdb import create_table, conn
 
 days_of_week = [
     'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo'
 ]
-
 
 
 def is_not_empty_fields(line):
@@ -21,20 +22,202 @@ def is_not_empty_fields(line):
             and line.item_presentation_field.value is not None)
 
 
+def create_nav_rail():
+    return ft.NavigationRail(
+        selected_index=0,
+        label_type=ft.NavigationRailLabelType.ALL,
+        min_width=100,
+        min_extended_width=400,
+        leading=ft.FloatingActionButton(icon=ft.icons.LOCAL_PHARMACY,
+                                        text="PharmaSys"),
+        group_alignment=-0.9,
+        destinations=[
+            ft.NavigationRailDestination(
+                icon=ft.icons.CREATE,
+                selected_icon=ft.icons.CREATE_OUTLINED,
+                icon_content=IconButton(),
+                label="Anotações"
+            ),
+        ],
+    )
+
+
+def create_day_filter_tabs(create_line, day_filter):
+    for i in range(7):
+        my_table = DataTable(
+            columns=[
+                DataColumn(Text('Data/Hora')),
+                DataColumn(Text('Produto')),
+                DataColumn(Text('Quantidade')),
+                DataColumn(Text('Apresentação')),
+                DataColumn(Text('Valor')),
+                DataColumn(Text('Ações')),
+            ],
+            rows=[]
+        )
+
+        tab = Tab(
+            text=days_of_week[i],
+            content=Column(
+                [SearchField(create_line, search_engine),
+                 my_table]
+            )
+        )
+        day_filter.tabs.append(tab)
+
+
+def search_engine(event: ControlEvent):
+    print(event.control, "pesquisando no banco")
+
+
 def pharma_sys_note_app(page: Page):
-    def anotation_delete(anotation):
-        def close_dlg():
+    # def anotation_delete(anotation):
+    #     def close_dlg():
+    #         dlg_modal.open = False
+    #         page.update()
+    #
+    #     def delete_anotation(e):
+    #         dlg_modal.open = False
+    #         index = day_filter.selected_index
+    #         tab_of_day = day_filter.tabs[index]
+    #         tab_of_day.content.controls[2].controls.remove(anotation)
+    #         anotation.update()
+    #         page.update()
+    #
+    #     dlg_modal = ft.AlertDialog(
+    #         modal=True,
+    #         title=ft.Container(
+    #             content=ft.Text("Por favor,  CONFIRME:", size=15),
+    #             bgcolor=ft.colors.BLUE_GREY_200,
+    #             padding=10,
+    #             expand=True,
+    #             border_radius=0,
+    #             border=ft.border.all(1, ft.colors.BLUE_GREY_200)),
+    #         content=ft.Text("Você realmente deseja deletar esse item?",
+    #                         weight='bold'),
+    #         actions=[
+    #             ft.ElevatedButton(
+    #                 "Sim",
+    #                 style=ft.ButtonStyle(color='red'),
+    #                 on_click=delete_anotation),
+    #             ft.ElevatedButton(
+    #                 "Não",
+    #                 on_click=close_dlg),
+    #         ],
+    #         actions_alignment=ft.MainAxisAlignment.END,
+    #         title_padding=1,
+    #     )
+    #     page.dialog = dlg_modal
+    #     page.dialog.open = True
+    #     page.update()
+
+    def anotation_edit(line: Anotation):
+        line.view.visible = True
+        # line.saved_view.visible = False
+        line.update()
+        i_cnt, i_name, i_pres, i_val = get_fields_values(line)
+        line.item_name_field = TextField(
+            label="Nome do Produto",
+            value=i_name)
+        line.item_count_field = TextField(
+            label="Quantidade",
+            value=i_cnt,
+            width=150)
+        line.item_value_field = TextField(
+            label="valor",
+            value=i_val,
+            width=150)
+        line.view.controls = [
+            line.item_name_field, line.item_count_field,
+            line.item_presentation_field, line.item_value_field
+        ]
+        line.control_buttons.controls[0].controls[0].visible = True
+        line.control_buttons.update()
+        line.view.update()
+
+    def anotation_save(line: Anotation):
+        if is_not_empty_fields(line):
+            i_cnt, i_name, i_pres, i_val = get_fields_values(line)
+            valid, i_val, i_cnt = check_numeric_values(i_cnt, i_val)
+            if not valid:
+                print("vou retornar!")
+                return
+            else:
+                create_permant_line(i_cnt, i_name, i_pres, i_val, line)
+                # line.update()
+        else:
+            show_alert_dialog("Preencher todos os campos!")
+
+    def create_permant_line(i_cnt, i_name, i_pres, i_val, line):
+        set_fields_values(i_cnt, i_name, i_pres, i_val, line)
+        my_table = day_filter.tabs[day_filter.selected_index].content.controls[
+            1]
+        c = conn.cursor()
+        c.execute(
+            "INSERT INTO items (timestamp, name, count, presetation, value) VALUES(?,?,?,?,?)",
+            (line.timestamp.value, line.item_name.value, line.item_count.value,
+             line.item_presentation.value, line.item_value.value)
+        )
+        conn.commit()
+        page.snack_bar = SnackBar(Text("Sucess Input"), bgcolor='green')
+        page.snack_bar.open = True
+        my_table.rows.clear()
+        read_db()
+        change_line_visibles(line)
+        page.update()
+
+    def read_db():
+        my_table = get_data_table()
+        c = conn.cursor()
+        c.execute("SELECT * from items")
+        items = c.fetchall()
+        print(items)
+        for item in items:
+            my_table.rows.append(
+                DataRow(
+                    cells=[DataCell(Text(item[4])),
+                           DataCell(Text(item[1])),
+                           DataCell(Text(item[3])),
+                           DataCell(Text(item[2])),
+                           DataCell(Text(item[5])),
+                           DataCell(
+                               Row([
+                                   IconButton("edit"),
+                                   IconButton("delete",
+                                              data=item[0],
+                                              on_click=delete_line)
+                               ]
+                               ))],
+                    on_select_changed=lambda e: print("Estou aqui")
+                )
+            )
+
+    def get_data_table():
+        my_table = day_filter.tabs[day_filter.selected_index].content.controls[
+            1]
+        return my_table
+
+    def delete_line(event):
+        def close_dlg(event):
             dlg_modal.open = False
             page.update()
 
-        def delete_anotation(e):
-            dlg_modal.open = False
-            index = day_filter.selected_index
-            tab_of_day = day_filter.tabs[index]
-            tab_of_day.content.controls[2].controls.remove(anotation)
-            anotation.update()
-            page.update()
+        def _delete(event):
+            print(f'fui eu: {event.control}')
+            try:
+                myid = int(event.control.data)
+                c = conn.cursor()
+                c.execute("DELETE FROM items WHERE id=?", (myid,))
+                conn.commit()
+                print('deletado com sucesso')
+                close_dlg(event)
+                my_table.rows.clear()
+                read_db()
+                my_table.update()
+            except Exception:
+                print(Exception.stack_trace)
 
+        my_table = get_data_table()
         dlg_modal = ft.AlertDialog(
             modal=True,
             title=ft.Container(
@@ -47,9 +230,14 @@ def pharma_sys_note_app(page: Page):
             content=ft.Text("Você realmente deseja deletar esse item?",
                             weight='bold'),
             actions=[
-                ft.ElevatedButton("Sim", style=ft.ButtonStyle(color='red'),
-                              on_click=delete_anotation),
-                ft.ElevatedButton("Não", on_click=close_dlg),
+                ft.ElevatedButton(
+                    "Sim",
+                    style=ft.ButtonStyle(color='red'),
+                    data=event.control.data,
+                    on_click=_delete),
+                ft.ElevatedButton(
+                    "Não",
+                    on_click=close_dlg),
             ],
             actions_alignment=ft.MainAxisAlignment.END,
             title_padding=1,
@@ -58,46 +246,10 @@ def pharma_sys_note_app(page: Page):
         page.dialog.open = True
         page.update()
 
-    def anotation_edit(line: Anotation):
-        line.view.visible = True
-        line.saved_view.visible = False
-        line.update()
-        i_cnt, i_name, i_pres, i_val = get_fields_values(line)
-        line.item_name_field = TextField(label="Nome do Produto", value=i_name)
-        line.item_count_field = TextField(label="Quantidade", value=i_cnt,
-                                          width=150)
-        line.item_value_field = TextField(label="valor", value=i_val,
-                                          width=150)
-        line.view.controls = [
-            line.item_name_field, line.item_count_field,
-            line.item_presentation_field, line.item_value_field]
-        line.control_buttons.controls[0].controls[0].visible = True
-        line.control_buttons.update()
-        line.view.update()
-
-    def anotation_save(line: Anotation):
-        if is_not_empty_fields(line):
-            i_cnt, i_name, i_pres, i_val = get_fields_values(line)
-            valid, i_val, i_cnt = check_numeric_values(i_cnt, i_val)
-            if not valid:
-                return
-            else:
-                create_permant_line(i_cnt, i_name, i_pres, i_val, line)
-                line.update()
-        else:
-            show_alert_dialog("Preencher todos os campos!")
-
-    def create_permant_line(i_cnt, i_name, i_pres, i_val, line):
-        set_fields_values(i_cnt, i_name, i_pres, i_val, line)
-        line.view.controls = [
-            line.item_name, line.item_count, line.item_presentation,
-            line.item_value]
-        change_line_visibles(line)
-
     def change_line_visibles(line):
-        line.control_buttons.controls[0].controls[0].visible = False
+        del day_filter.tabs[day_filter.selected_index].content.controls[2]
+        # line.control_buttons.controls[0].controls[0].visible = False
         line.view.visible = False
-        line.saved_view.visible = True
         line.control_buttons.update()
 
     def set_fields_values(i_cnt, i_name, i_pres, i_val, line):
@@ -133,25 +285,21 @@ def pharma_sys_note_app(page: Page):
             show_alert_dialog("Insira Valores numéricos!")
             return False, item_value, item_count
 
-    # def tabs_changed(e):
-    #     ...
-
     def create_line(e: ControlEvent):
-        print("fui chamado por", e.control)
-
         index = day_filter.selected_index
-        anotacao = Anotation(anotation_save, anotation_edit, anotation_delete)
         tab_of_day = day_filter.tabs[index]
         search_field = tab_of_day.content.controls[0]
+        anotacao = Anotation(anotation_save, anotation_edit,delete_line)
 
-        # tab_of_day.content.controls[1].visible = True
         anotacao.item_name_field.value = search_field.search_field.value
-        #tab_of_day.content.controls[1].update()
-        tab_of_day.content.controls[1].controls.append(anotacao)
-        #tab_of_day.content.controls[2].update()
-        #tab_of_day.update()
+        tab_of_day.content.controls.append(anotacao)
+        search_field.search_field.value = ""
+        search_field.update()
         page.update()
-
+        # tab_of_day.content.controls[1].visible = True
+        # tab_of_day.content.controls[1].update()
+        # tab_of_day.content.controls[2].update()
+        # tab_of_day.update()
 
     def get_timestamp():
         now = datetime.now()
@@ -186,6 +334,7 @@ def pharma_sys_note_app(page: Page):
             )
         ]
 
+    create_table()
     day_filter = Tabs(selected_index=0, animation_duration=300, expand=True)
     create_day_filter_tabs(create_line, day_filter)
     day_filter.selected_index = get_tab_day()
@@ -193,50 +342,9 @@ def pharma_sys_note_app(page: Page):
     page.appbar.actions = create_popupmenubuttons()
 
     rail = create_nav_rail()
-
-    page.add(Row([rail, ft.VerticalDivider(width=1), day_filter], expand=True))
-
-
-def create_nav_rail():
-    return ft.NavigationRail(
-        selected_index=0,
-        label_type=ft.NavigationRailLabelType.ALL,
-        min_width=100,
-        min_extended_width=400,
-        leading=ft.FloatingActionButton(icon=ft.icons.LOCAL_PHARMACY,
-                                        text="PharmaSys"),
-        group_alignment=-0.9,
-        destinations=[
-            ft.NavigationRailDestination(
-                icon=ft.icons.CREATE,
-                selected_icon=ft.icons.CREATE_OUTLINED,
-                icon_content=IconButton(),
-                label="Anotações"
-            ),
-        ],
-        # on_change=lambda e: print("Selected destination:",
-        #                           e.control.selected_index),
+    page.scroll = "allways"
+    page.add(
+        Row(
+            [rail, ft.VerticalDivider(width=1), day_filter],
+            expand=True)
     )
-
-
-def create_day_filter_tabs(create_line, day_filter):
-    print("create_day_filter_tabs")
-    for i in range(7):
-        anotations = Column()
-        tab = Tab(
-            text=days_of_week[i],
-            content=Column([SearchField(create_line, search_engine),
-                            # Container(content=head_table, visible=False, bgcolor='blue'),
-                            ft.ListView(
-                                expand=1,
-                                spacing=10,
-                                padding=20,
-                                auto_scroll=False,
-                                controls=[anotations])
-                            ])
-        )
-        day_filter.tabs.append(tab)
-
-
-def search_engine(event: ControlEvent):
-    print(event.control, "pesquisando no banco")

@@ -2,7 +2,7 @@ import flet as ft
 from flet_core import (UserControl, Text, TextField, KeyboardType, Column, Row,
                        MainAxisAlignment, CrossAxisAlignment, IconButton,
                        icons, colors,
-                       ControlEvent)
+                       ControlEvent, Card, DataTable)
 
 
 class Anotation(UserControl):
@@ -39,23 +39,15 @@ class Anotation(UserControl):
 
     def build(self):
         self.anotacoes = Column()  # NOQA
-        self.view = Row(controls=[  # NOQA
-            self.item_name_field,
-            self.item_count_field,
-            self.item_presentation_field,
-            self.item_value_field
-        ])
-        self.saved_view = Row(controls=[  # NOQA
-            self.timestamp,
-            self.item_name,
-            self.item_count,
-            self.item_presentation,
-            self.item_value
-        ],
-            visible=False)
-
+        self.view = Row(
+                controls=[
+                    self.item_name_field,
+                    self.item_count_field,
+                    self.item_presentation_field,
+                    self.item_value_field
+                ])
         self.control_buttons = self.create_control_buttons()    # NOQA
-        return Row(controls=[self.view, self.saved_view, self.control_buttons],
+        return Row(controls=[self.view, self.control_buttons],
                    expand=True)
 
     def create_control_buttons(self):
@@ -72,11 +64,11 @@ class Anotation(UserControl):
                             tooltip="Confirmar",
                             on_click=self.save_clicked,
                         ),
-                        IconButton(
-                            icon=icons.CREATE_OUTLINED,
-                            tooltip="Editar",
-                            on_click=self.edit_clicked,
-                        ),
+                        # IconButton(
+                        #     icon=icons.CREATE_OUTLINED,
+                        #     tooltip="Editar",
+                        #     on_click=self.edit_clicked,
+                        # ),
                         IconButton(
                             icons.DELETE_OUTLINE,
                             tooltip="Apagar",

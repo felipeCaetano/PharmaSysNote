@@ -4,6 +4,7 @@ from pharmasysapp import pharma_sys_note_app
 
 
 def main(page: ft.Page):
+    page.scroll = "allways"
     page.title = "PharmaSys"
     page.horizontal_alignment = "center"
     page.appbar = ft.AppBar(
