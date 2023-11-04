@@ -67,4 +67,17 @@ def create_table():
     value FLOAT)
     """)
 
+    c.execute("""CREATE TABLE IF NOT EXISTS produtos (
+       id INTEGER PRIMARY KEY AUTOINCREMENT,
+       codigo TEXT,
+       name TEXT,
+       presetation TEXT,
+       count INTEGER,
+       laboratorio TEXT,
+       generico TEXT,
+       lote TEXT,
+       validade TEXT,
+       value FLOAT)
+       """)
+
     conn.commit()

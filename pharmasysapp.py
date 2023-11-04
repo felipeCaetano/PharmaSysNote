@@ -2,11 +2,12 @@ from datetime import datetime
 
 import flet as ft
 from flet_core import (
-    Page, icons, Tabs, Tab, Column, IconButton, Row, TextField, ControlEvent,
+    Page, icons, Tabs, Tab, Column, IconButton, Row, ControlEvent,
     DataTable, DataColumn, Text, DataRow,
-    DataCell, Container, SnackBar)
+    DataCell, SnackBar, transform)
 
 from annotation import Anotation
+from cadastro import Cadastro
 from search_field import SearchField
 from tablesdb import create_table, conn
 
@@ -47,7 +48,7 @@ def get_tab_day():
     return now.weekday()
 
 
-def create_day_filter_tabs(create_line, day_filter):
+def create_day_filter_tabs(create_line, day_filter, search_engine):
     day_of_week = get_tab_day()
     for i in range(7):
         my_table = DataTable(
@@ -75,12 +76,37 @@ def create_day_filter_tabs(create_line, day_filter):
         day_filter.tabs.append(tab)
 
 
-def search_engine(event: ControlEvent):
-    print(event.control, "pesquisando no banco")
-
-
 def pharma_sys_note_app(page: Page):
     id_edit = Text()
+
+    def search_engine(event: ControlEvent):
+        index = day_filter.selected_index
+        tab_of_day = day_filter.tabs[index]
+        search_field = tab_of_day.content.controls[0]
+
+        print(event.control, "pesquisando no banco")
+        print(search_field.search_field.value, "pesquisando no banco")
+        cursor = conn.cursor()
+        query = "SELECT * FROM produtos WHERE codigo = ? or name = ?"
+        cursor.execute(query, (event.data, event.data))
+        items = cursor.fetchall()
+        print(items)
+        if not items:
+            page.snack_bar = SnackBar(Text("Produto não cadastrado"), bgcolor='red')
+            page.snack_bar.open = True
+            show_confirm_dialog(_cadastrar, close_dlg, event, "Deseja Cadastrar este produto?")
+
+    # def hidecon(event):
+    #     inputcon.offset = transform.Offset(2, 0)
+    #     page.update()
+
+    def _cadastrar(event):
+        close_dlg(event)
+        cadastro = Cadastro()
+        cadastro.offset = transform.Offset(0, 0)
+        page.add(cadastro)
+        page.update()
+
 
     def anotation_edit(event: ControlEvent):
         index = day_filter.selected_index
@@ -120,12 +146,14 @@ def pharma_sys_note_app(page: Page):
         try:
             myid = id_edit.value
             set_fields_values(i_cnt, i_name, i_pres, i_val, line)
-            my_table = day_filter.tabs[day_filter.selected_index].content.controls[
-                1]
+            my_table = \
+                day_filter.tabs[day_filter.selected_index].content.controls[
+                    1]
             c = conn.cursor()
             c.execute(
                 "UPDATE items SET timestamp=?, name=?, count=?, presetation=?, value=? WHERE id=?",
-                (line.timestamp.value, line.item_name.value, line.item_count.value,
+                (line.timestamp.value, line.item_name.value,
+                 line.item_count.value,
                  line.item_presentation.value, line.item_value.value, myid)
             )
             conn.commit()
@@ -189,10 +217,11 @@ def pharma_sys_note_app(page: Page):
             1]
         return my_table
 
+    def close_dlg(event):
+        page.dialog.open = False
+        page.update()
+
     def delete_line(event):
-        def close_dlg(event):
-            dlg_modal.open = False
-            page.update()
 
         def _delete(event):
             try:
@@ -204,8 +233,8 @@ def pharma_sys_note_app(page: Page):
                 my_table.rows.clear()
                 read_db()
                 my_table.update()
-            except Exception:
-                print(Exception.stack_trace)
+            except Exception as e:
+                print(e.args)
 
         if isinstance(event, Anotation):
             index = day_filter.selected_index
@@ -217,6 +246,9 @@ def pharma_sys_note_app(page: Page):
             page.update()
             return
         my_table = get_data_table()
+        show_confirm_dialog(_delete, close_dlg, event, "Deseja realmente DELETAR este item?")
+
+    def show_confirm_dialog(confirm, refuse, event, sys_msg):
         dlg_modal = ft.AlertDialog(
             modal=True,
             title=ft.Container(
@@ -226,17 +258,16 @@ def pharma_sys_note_app(page: Page):
                 expand=True,
                 border_radius=0,
                 border=ft.border.all(1, ft.colors.BLUE_GREY_200)),
-            content=ft.Text("Você realmente deseja deletar esse item?",
-                            weight='bold'),
+            content=ft.Text(sys_msg, weight='bold'),
             actions=[
                 ft.ElevatedButton(
                     "Sim",
                     style=ft.ButtonStyle(color='red'),
                     data=event.control.data,
-                    on_click=_delete),
+                    on_click=confirm),
                 ft.ElevatedButton(
                     "Não",
-                    on_click=close_dlg),
+                    on_click=refuse),
             ],
             actions_alignment=ft.MainAxisAlignment.END,
             title_padding=1,
@@ -327,7 +358,7 @@ def pharma_sys_note_app(page: Page):
     create_table()
     day_filter = Tabs(
         selected_index=0, animation_duration=300, expand=True)
-    create_day_filter_tabs(create_line, day_filter)
+    create_day_filter_tabs(create_line, day_filter, search_engine)
     day_filter.selected_index = get_tab_day()
 
     page.appbar.actions = create_popupmenubuttons()
