@@ -42,7 +42,13 @@ def create_nav_rail():
     )
 
 
+def get_tab_day():
+    now = datetime.now()
+    return now.weekday()
+
+
 def create_day_filter_tabs(create_line, day_filter):
+    day_of_week = get_tab_day()
     for i in range(7):
         my_table = DataTable(
             columns=[
@@ -53,16 +59,19 @@ def create_day_filter_tabs(create_line, day_filter):
                 DataColumn(Text('Valor')),
                 DataColumn(Text('Ações')),
             ],
-            rows=[]
+            rows=[],
         )
 
         tab = Tab(
             text=days_of_week[i],
             content=Column(
                 [SearchField(create_line, search_engine),
-                 my_table]
+                 my_table],
+                scroll=True
             )
         )
+        if day_of_week != i:
+            tab.content.disabled = True
         day_filter.tabs.append(tab)
 
 
@@ -71,84 +80,63 @@ def search_engine(event: ControlEvent):
 
 
 def pharma_sys_note_app(page: Page):
-    # def anotation_delete(anotation):
-    #     def close_dlg():
-    #         dlg_modal.open = False
-    #         page.update()
-    #
-    #     def delete_anotation(e):
-    #         dlg_modal.open = False
-    #         index = day_filter.selected_index
-    #         tab_of_day = day_filter.tabs[index]
-    #         tab_of_day.content.controls[2].controls.remove(anotation)
-    #         anotation.update()
-    #         page.update()
-    #
-    #     dlg_modal = ft.AlertDialog(
-    #         modal=True,
-    #         title=ft.Container(
-    #             content=ft.Text("Por favor,  CONFIRME:", size=15),
-    #             bgcolor=ft.colors.BLUE_GREY_200,
-    #             padding=10,
-    #             expand=True,
-    #             border_radius=0,
-    #             border=ft.border.all(1, ft.colors.BLUE_GREY_200)),
-    #         content=ft.Text("Você realmente deseja deletar esse item?",
-    #                         weight='bold'),
-    #         actions=[
-    #             ft.ElevatedButton(
-    #                 "Sim",
-    #                 style=ft.ButtonStyle(color='red'),
-    #                 on_click=delete_anotation),
-    #             ft.ElevatedButton(
-    #                 "Não",
-    #                 on_click=close_dlg),
-    #         ],
-    #         actions_alignment=ft.MainAxisAlignment.END,
-    #         title_padding=1,
-    #     )
-    #     page.dialog = dlg_modal
-    #     page.dialog.open = True
-    #     page.update()
+    id_edit = Text()
 
-    def anotation_edit(line: Anotation):
-        line.view.visible = True
-        # line.saved_view.visible = False
-        line.update()
-        i_cnt, i_name, i_pres, i_val = get_fields_values(line)
-        line.item_name_field = TextField(
-            label="Nome do Produto",
-            value=i_name)
-        line.item_count_field = TextField(
-            label="Quantidade",
-            value=i_cnt,
-            width=150)
-        line.item_value_field = TextField(
-            label="valor",
-            value=i_val,
-            width=150)
-        line.view.controls = [
-            line.item_name_field, line.item_count_field,
-            line.item_presentation_field, line.item_value_field
-        ]
-        line.control_buttons.controls[0].controls[0].visible = True
-        line.control_buttons.update()
-        line.view.update()
+    def anotation_edit(event: ControlEvent):
+        index = day_filter.selected_index
+        tab_of_day = day_filter.tabs[index]
+        anotacao = Anotation(anotation_update, anotation_edit, delete_line)
+        anotacao.item_name_field.value = event.control.data[1]
+        anotacao.item_count_field.value = event.control.data[3]
+        anotacao.item_presentation_field.value = event.control.data[2]
+        anotacao.item_value_field.value = event.control.data[5][3:]
+        id_edit.value = event.control.data[0]
+        tab_of_day.content.controls.append(anotacao)
+        page.update()
+
+    def anotation_update(line: Anotation):
+        if is_not_empty_fields(line):
+            i_cnt, i_name, i_pres, i_val = get_fields_values(line)
+            valid, i_val, i_cnt = check_numeric_values(i_cnt, i_val)
+            if not valid:
+                return
+            else:
+                update_permanent_line(i_cnt, i_name, i_pres, i_val, line)
+        else:
+            show_alert_dialog("Preencher todos os campos!")
 
     def anotation_save(line: Anotation):
         if is_not_empty_fields(line):
             i_cnt, i_name, i_pres, i_val = get_fields_values(line)
             valid, i_val, i_cnt = check_numeric_values(i_cnt, i_val)
             if not valid:
-                print("vou retornar!")
                 return
             else:
-                create_permant_line(i_cnt, i_name, i_pres, i_val, line)
-                # line.update()
+                create_permanent_line(i_cnt, i_name, i_pres, i_val, line)
         else:
             show_alert_dialog("Preencher todos os campos!")
 
-    def create_permant_line(i_cnt, i_name, i_pres, i_val, line):
+    def update_permanent_line(i_cnt, i_name, i_pres, i_val, line):
+        try:
+            myid = id_edit.value
+            set_fields_values(i_cnt, i_name, i_pres, i_val, line)
+            my_table = day_filter.tabs[day_filter.selected_index].content.controls[
+                1]
+            c = conn.cursor()
+            c.execute(
+                "UPDATE items SET timestamp=?, name=?, count=?, presetation=?, value=? WHERE id=?",
+                (line.timestamp.value, line.item_name.value, line.item_count.value,
+                 line.item_presentation.value, line.item_value.value, myid)
+            )
+            conn.commit()
+            my_table.rows.clear()
+            read_db()
+            change_line_visibles(line)
+            page.update()
+        except Exception as e:
+            print(e)
+
+    def create_permanent_line(i_cnt, i_name, i_pres, i_val, line):
         set_fields_values(i_cnt, i_name, i_pres, i_val, line)
         my_table = day_filter.tabs[day_filter.selected_index].content.controls[
             1]
@@ -168,10 +156,12 @@ def pharma_sys_note_app(page: Page):
 
     def read_db():
         my_table = get_data_table()
-        c = conn.cursor()
-        c.execute("SELECT * from items")
-        items = c.fetchall()
-        print(items)
+        cursor = conn.cursor()
+        data_atual = datetime.today()
+        data_atual_formatada = data_atual.strftime("%d/%m/%Y")
+        query = "SELECT * FROM items WHERE SUBSTR(timestamp, 1, 10) = ?"
+        cursor.execute(query, (data_atual_formatada,))
+        items = cursor.fetchall()
         for item in items:
             my_table.rows.append(
                 DataRow(
@@ -182,13 +172,15 @@ def pharma_sys_note_app(page: Page):
                            DataCell(Text(item[5])),
                            DataCell(
                                Row([
-                                   IconButton("edit"),
+                                   IconButton(
+                                       "edit",
+                                       data=item,
+                                       on_click=anotation_edit),
                                    IconButton("delete",
                                               data=item[0],
                                               on_click=delete_line)
                                ]
                                ))],
-                    on_select_changed=lambda e: print("Estou aqui")
                 )
             )
 
@@ -203,13 +195,11 @@ def pharma_sys_note_app(page: Page):
             page.update()
 
         def _delete(event):
-            print(f'fui eu: {event.control}')
             try:
                 myid = int(event.control.data)
                 c = conn.cursor()
                 c.execute("DELETE FROM items WHERE id=?", (myid,))
                 conn.commit()
-                print('deletado com sucesso')
                 close_dlg(event)
                 my_table.rows.clear()
                 read_db()
@@ -217,6 +207,15 @@ def pharma_sys_note_app(page: Page):
             except Exception:
                 print(Exception.stack_trace)
 
+        if isinstance(event, Anotation):
+            index = day_filter.selected_index
+            tab_of_day = day_filter.tabs[index]
+            search_field = tab_of_day.content.controls[0]
+            tab_of_day.content.controls.pop()
+            search_field.search_field.value = ""
+            search_field.update()
+            page.update()
+            return
         my_table = get_data_table()
         dlg_modal = ft.AlertDialog(
             modal=True,
@@ -248,7 +247,6 @@ def pharma_sys_note_app(page: Page):
 
     def change_line_visibles(line):
         del day_filter.tabs[day_filter.selected_index].content.controls[2]
-        # line.control_buttons.controls[0].controls[0].visible = False
         line.view.visible = False
         line.control_buttons.update()
 
@@ -289,26 +287,18 @@ def pharma_sys_note_app(page: Page):
         index = day_filter.selected_index
         tab_of_day = day_filter.tabs[index]
         search_field = tab_of_day.content.controls[0]
-        anotacao = Anotation(anotation_save, anotation_edit,delete_line)
+        anotacao = Anotation(anotation_save, anotation_edit, delete_line)
 
         anotacao.item_name_field.value = search_field.search_field.value
         tab_of_day.content.controls.append(anotacao)
         search_field.search_field.value = ""
         search_field.update()
         page.update()
-        # tab_of_day.content.controls[1].visible = True
-        # tab_of_day.content.controls[1].update()
-        # tab_of_day.content.controls[2].update()
-        # tab_of_day.update()
 
     def get_timestamp():
         now = datetime.now()
         timestamp = now.strftime("%d/%m/%Y, %H:%M:%S")
         return timestamp
-
-    def get_tab_day():
-        now = datetime.now()
-        return now.weekday()
 
     def create_menu_item(icon=None, text=""):
         if not icon and not text:
@@ -320,7 +310,7 @@ def pharma_sys_note_app(page: Page):
             ft.PopupMenuButton(
                 items=[
                     create_menu_item(icons.LOGIN, "Login"),
-                    create_menu_item(),  # divider
+                    create_menu_item(),
                     create_menu_item(icons.PIE_CHART, "Relatórios"),
                     create_menu_item(),
                     create_menu_item(icons.SETTINGS, "Configurações"),
@@ -335,7 +325,8 @@ def pharma_sys_note_app(page: Page):
         ]
 
     create_table()
-    day_filter = Tabs(selected_index=0, animation_duration=300, expand=True)
+    day_filter = Tabs(
+        selected_index=0, animation_duration=300, expand=True)
     create_day_filter_tabs(create_line, day_filter)
     day_filter.selected_index = get_tab_day()
 
@@ -343,6 +334,7 @@ def pharma_sys_note_app(page: Page):
 
     rail = create_nav_rail()
     page.scroll = "allways"
+    read_db()
     page.add(
         Row(
             [rail, ft.VerticalDivider(width=1), day_filter],

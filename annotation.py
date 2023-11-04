@@ -64,11 +64,6 @@ class Anotation(UserControl):
                             tooltip="Confirmar",
                             on_click=self.save_clicked,
                         ),
-                        # IconButton(
-                        #     icon=icons.CREATE_OUTLINED,
-                        #     tooltip="Editar",
-                        #     on_click=self.edit_clicked,
-                        # ),
                         IconButton(
                             icons.DELETE_OUTLINE,
                             tooltip="Apagar",
