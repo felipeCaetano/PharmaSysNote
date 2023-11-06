@@ -88,25 +88,61 @@ def pharma_sys_note_app(page: Page):
         print(search_field.search_field.value, "pesquisando no banco")
         cursor = conn.cursor()
         query = "SELECT * FROM produtos WHERE codigo = ? or name = ?"
-        cursor.execute(query, (event.data, event.data))
+        cursor.execute(query, (search_field.search_field.value, search_field.search_field.value))
         items = cursor.fetchall()
         print(items)
         if not items:
             page.snack_bar = SnackBar(Text("Produto não cadastrado"), bgcolor='red')
             page.snack_bar.open = True
-            show_confirm_dialog(_cadastrar, close_dlg, event, "Deseja Cadastrar este produto?")
+            show_confirm_dialog(_cadastrar, close_dlg, event, "Deseja Cadastrar este produto?", 'green')
 
-    # def hidecon(event):
-    #     inputcon.offset = transform.Offset(2, 0)
-    #     page.update()
+    def savecon(event):
+        status, i_name, i_code, i_info, i_price, i_cont, i_lab, i_validade, i_type, i_lote, i_pres = get_con_fields()
+        print(i_name, i_code, i_info, i_price, i_cont, i_lab, i_validade, i_type, i_lote, i_pres)
+        c = conn.cursor()
+        c.execute(
+            "INSERT INTO produtos (codigo, name, description, value, count, laboratorio, generico, lote, validade, presetation) VALUES(?,?,?,?,?,?,?,?,?,?)",
+            (i_code, i_name, i_info, i_price, i_cont, i_lab, i_validade, i_type, i_lote, i_pres)
+        )
+        conn.commit()
+        if status:
+            hidecon(event)
+            page.snack_bar = SnackBar(Text("Sucess Input"), bgcolor='green')
+            page.snack_bar.open = True
+        else:
+            page.snack_bar = SnackBar(Text("Não Cadastrado"), bgcolor='orange')
+            page.snack_bar.open = True
+        page.update()
+
+    def get_con_fields():
+        i_name = cadastro.product_name.value
+        i_code = cadastro.product_code.value
+        i_info = cadastro.product_info.value
+        i_price = cadastro.product_price.value
+        i_cont = cadastro.product_total_cnt.value
+        i_lab = cadastro.product_lab.value
+        i_valid = cadastro.product_date.value
+        i_type = cadastro.product_generic.value
+        i_lote = cadastro.product_lote.value
+        i_pres = cadastro.product_presentation.value
+        if all([i_name, i_code, i_info, i_price, i_cont, i_lab, i_valid, i_type, i_lote, i_pres]):
+            return True, i_name, i_code, i_info, i_price, i_cont, i_lab, i_valid, i_type, i_lote, i_pres
+        else:
+            show_alert_dialog("Preencha todos os campos!")
+            return False, i_name, i_code, i_info, i_price, i_cont, i_lab, i_valid, i_type, i_lote, i_pres
+
+    def hidecon(event):
+        cadastro.offset = transform.Offset(2, 0)
+        page.remove(cadastro)
+        page.update()
+
+    cadastro = Cadastro(savecon, hidecon)
 
     def _cadastrar(event):
         close_dlg(event)
-        cadastro = Cadastro()
         cadastro.offset = transform.Offset(0, 0)
         page.add(cadastro)
         page.update()
-
 
     def anotation_edit(event: ControlEvent):
         index = day_filter.selected_index
@@ -146,9 +182,7 @@ def pharma_sys_note_app(page: Page):
         try:
             myid = id_edit.value
             set_fields_values(i_cnt, i_name, i_pres, i_val, line)
-            my_table = \
-                day_filter.tabs[day_filter.selected_index].content.controls[
-                    1]
+            my_table = day_filter.tabs[day_filter.selected_index].content.controls[1]
             c = conn.cursor()
             c.execute(
                 "UPDATE items SET timestamp=?, name=?, count=?, presetation=?, value=? WHERE id=?",
@@ -246,9 +280,9 @@ def pharma_sys_note_app(page: Page):
             page.update()
             return
         my_table = get_data_table()
-        show_confirm_dialog(_delete, close_dlg, event, "Deseja realmente DELETAR este item?")
+        show_confirm_dialog(_delete, close_dlg, event, "Deseja realmente DELETAR este item?", 'red')
 
-    def show_confirm_dialog(confirm, refuse, event, sys_msg):
+    def show_confirm_dialog(confirm, refuse, event, sys_msg, confirm_color):
         dlg_modal = ft.AlertDialog(
             modal=True,
             title=ft.Container(
@@ -262,7 +296,7 @@ def pharma_sys_note_app(page: Page):
             actions=[
                 ft.ElevatedButton(
                     "Sim",
-                    style=ft.ButtonStyle(color='red'),
+                    style=ft.ButtonStyle(color=confirm_color),
                     data=event.control.data,
                     on_click=confirm),
                 ft.ElevatedButton(
@@ -366,8 +400,11 @@ def pharma_sys_note_app(page: Page):
     rail = create_nav_rail()
     page.scroll = "allways"
     read_db()
-    page.add(
+    # cadastro = Cadastro()
+    page.add(Column([
         Row(
             [rail, ft.VerticalDivider(width=1), day_filter],
-            expand=True)
+            expand=True),
+        # cadastro
+    ], expand=True)
     )

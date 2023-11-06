@@ -71,6 +71,7 @@ def create_table():
        id INTEGER PRIMARY KEY AUTOINCREMENT,
        codigo TEXT,
        name TEXT,
+       description TEXT,
        presetation TEXT,
        count INTEGER,
        laboratorio TEXT,
