@@ -95,6 +95,8 @@ def pharma_sys_note_app(page: Page):
             page.snack_bar = SnackBar(Text("Produto não cadastrado"), bgcolor='red')
             page.snack_bar.open = True
             show_confirm_dialog(_cadastrar, close_dlg, event, "Deseja Cadastrar este produto?", 'green')
+        else:
+            create_line(items[0])
 
     def savecon(event):
         status, i_name, i_code, i_info, i_price, i_cont, i_lab, i_validade, i_type, i_lote, i_pres = get_con_fields()
@@ -202,19 +204,31 @@ def pharma_sys_note_app(page: Page):
         set_fields_values(i_cnt, i_name, i_pres, i_val, line)
         my_table = day_filter.tabs[day_filter.selected_index].content.controls[
             1]
-        c = conn.cursor()
-        c.execute(
-            "INSERT INTO items (timestamp, name, count, presetation, value) VALUES(?,?,?,?,?)",
-            (line.timestamp.value, line.item_name.value, line.item_count.value,
-             line.item_presentation.value, line.item_value.value)
-        )
-        conn.commit()
-        page.snack_bar = SnackBar(Text("Sucess Input"), bgcolor='green')
-        page.snack_bar.open = True
-        my_table.rows.clear()
-        read_db()
-        change_line_visibles(line)
-        page.update()
+        if insert_line(line):
+            page.snack_bar = SnackBar(Text("Sucess Input"), bgcolor='green')
+            page.snack_bar.open = True
+            my_table.rows.clear()
+            read_db()
+            change_line_visibles(line)
+            page.update()
+        else:
+            page.snack_bar = SnackBar(Text("Falha ao salvar "), bgcolor='red')
+            page.snack_bar.open = True
+            page.update()
+
+
+    def insert_line(line):
+        try:
+            c = conn.cursor()
+            c.execute(
+                "INSERT INTO items (timestamp, name, count, presetation, value) VALUES(?,?,?,?,?)",
+                (line.timestamp.value, line.item_name.value, line.item_count.value,
+                 line.item_presentation.value, line.item_value.value)
+            )
+            conn.commit()
+            return True
+        except Exception:
+            return False
 
     def read_db():
         my_table = get_data_table()
@@ -311,6 +325,7 @@ def pharma_sys_note_app(page: Page):
         page.update()
 
     def change_line_visibles(line):
+        # print(day_filter.tabs[day_filter.selected_index].content.controls)
         del day_filter.tabs[day_filter.selected_index].content.controls[2]
         line.view.visible = False
         line.control_buttons.update()
@@ -349,12 +364,18 @@ def pharma_sys_note_app(page: Page):
             return False, item_value, item_count
 
     def create_line(e: ControlEvent):
+        print(f'create line for {e}')
+        anotacao = Anotation(anotation_save, anotation_edit, delete_line)
         index = day_filter.selected_index
         tab_of_day = day_filter.tabs[index]
         search_field = tab_of_day.content.controls[0]
-        anotacao = Anotation(anotation_save, anotation_edit, delete_line)
+        if isinstance(e, ControlEvent):
+            anotacao.item_name_field.value = search_field.search_field.value
+        else:
+            anotacao.item_name_field.value = e[2]
+            anotacao.item_presentation_field.value = e[3]
+            anotacao.item_value_field.value = e[-2]
 
-        anotacao.item_name_field.value = search_field.search_field.value
         tab_of_day.content.controls.append(anotacao)
         search_field.search_field.value = ""
         search_field.update()
