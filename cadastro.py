@@ -37,9 +37,9 @@ class Cadastro(flet.UserControl):
 
     def build(self):
         inputcon = Card(
-            offset=transform.Offset(-2, -2),
+            offset=transform.Offset(-2, 0),
             animate_offset=animation.Animation(500, curve="easeIn"),
-            elevation=30,
+            elevation=10,
             content=Container(
                 margin=10,
                 padding=12,
