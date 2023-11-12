@@ -81,4 +81,6 @@ def create_table():
        value FLOAT)
        """)
 
+    # c.execute("""ALTER TABLE produtos ADD COLUMN description TEXT""")
+
     conn.commit()

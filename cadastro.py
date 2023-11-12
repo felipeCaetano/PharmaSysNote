@@ -1,6 +1,8 @@
 import flet
-from flet_core import Card, animation, Container, transform, Column, Row, Text, \
-    IconButton, FilledButton, Page, TextField, RadioGroup, Radio, alignment, MainAxisAlignment, Dropdown, dropdown
+from flet_core import (Card, animation, Container, transform, Column, Row,
+                       Text, IconButton, FilledButton, TextField, RadioGroup,
+                       Radio, alignment, MainAxisAlignment, Dropdown, dropdown,
+                       AnimationCurve, FontWeight)
 
 
 class Cadastro(flet.UserControl):
@@ -34,8 +36,9 @@ class Cadastro(flet.UserControl):
 
     def build(self):
         inputcon = Card(
-            offset=transform.Offset(0, 0),
-            animate_offset=animation.Animation(500, curve="easeIn"),
+            offset=transform.Offset(2, 0),
+            animate_offset=animation.Animation(
+                500, curve=AnimationCurve.EASE_IN),
             elevation=30,
             content=Container(
                 margin=10,
@@ -44,20 +47,19 @@ class Cadastro(flet.UserControl):
                 bgcolor="green200",
                 content=Column([
                     Row([
-                        Text("Novo Cadastro", size=20, weight="bold"),
+                        Text("Novo Cadastro", size=20, weight=FontWeight.BOLD),
                         IconButton(icon="close", icon_size=30,
                                    on_click=self.close)
                     ], alignment=MainAxisAlignment.SPACE_BETWEEN),
-                    Row([self.product_code, self.product_name, self.product_lote]),
-                    Row([self.product_info, self.product_lab, self.product_total_cnt]),
-                    Row([self.product_price, self.product_generic, self.product_presentation, self.product_date]),
+                    Row([self.product_code, self.product_name,
+                         self.product_lote]),
+                    Row([self.product_info, self.product_lab,
+                         self.product_total_cnt]),
+                    Row([self.product_price, self.product_generic,
+                         self.product_presentation, self.product_date]),
                     FilledButton("Salvar", on_click=self.save)
                 ],
                     spacing=50
                 )
             ))
-
         return inputcon
-
-
-

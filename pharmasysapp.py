@@ -4,16 +4,56 @@ import flet as ft
 from flet_core import (
     Page, icons, Tabs, Tab, Column, IconButton, Row, ControlEvent,
     DataTable, DataColumn, Text, DataRow,
-    DataCell, SnackBar, transform)
+    DataCell, SnackBar, transform, ScrollMode, FontWeight)
 
 from annotation import Anotation
 from cadastro import Cadastro
 from search_field import SearchField
 from tablesdb import create_table, conn
 
-days_of_week = [
-    'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo'
-]
+FAIL = "Falha ao salvar"
+
+FILL_FIELDS = "Preencha todos os campos!"
+
+NOT_REGISTERED = "Não Cadastrado"
+
+SUCESS = "Salvo com Sucesso"
+
+WANT_TO_REGISTER = "Deseja Cadastrar este produto?"
+
+PROD_NOTFOUND = "Produto não cadastrado"
+
+COLUMN_5 = 'Ações'
+
+COLUMN_4 = 'Valor'
+
+COLUMN_3 = 'Apresentação'
+
+COLUMN_2 = 'Quantidade'
+
+COLUMN_1 = 'Produto'
+
+COLUMN_0 = 'Data/Hora'
+
+FT_ANOTA = "Anotações"
+
+APP_NAME = "PharmaSys"
+
+SUNDAY = 'Domingo'
+
+SATURDAY = 'Sábado'
+
+FRIDAY = 'Sexta'
+
+THURSDAY = 'Quinta'
+
+WEDNESDAY = 'Quarta'
+
+TUESDAY = 'Terça'
+
+MONDAY = 'Segunda'
+
+days_of_week = [MONDAY, TUESDAY, WEDNESDAY, THURSDAY, FRIDAY, SATURDAY, SUNDAY]
 
 
 def is_not_empty_fields(line):
@@ -30,14 +70,14 @@ def create_nav_rail():
         min_width=100,
         min_extended_width=400,
         leading=ft.FloatingActionButton(icon=ft.icons.LOCAL_PHARMACY,
-                                        text="PharmaSys"),
+                                        text=APP_NAME),
         group_alignment=-0.9,
         destinations=[
             ft.NavigationRailDestination(
                 icon=ft.icons.CREATE,
                 selected_icon=ft.icons.CREATE_OUTLINED,
                 icon_content=IconButton(),
-                label="Anotações"
+                label=FT_ANOTA
             ),
         ],
     )
@@ -53,12 +93,12 @@ def create_day_filter_tabs(create_line, day_filter, search_engine):
     for i in range(7):
         my_table = DataTable(
             columns=[
-                DataColumn(Text('Data/Hora')),
-                DataColumn(Text('Produto')),
-                DataColumn(Text('Quantidade')),
-                DataColumn(Text('Apresentação')),
-                DataColumn(Text('Valor')),
-                DataColumn(Text('Ações')),
+                DataColumn(Text(COLUMN_0)),
+                DataColumn(Text(COLUMN_1)),
+                DataColumn(Text(COLUMN_2)),
+                DataColumn(Text(COLUMN_3)),
+                DataColumn(Text(COLUMN_4)),
+                DataColumn(Text(COLUMN_5)),
             ],
             rows=[],
         )
@@ -68,7 +108,7 @@ def create_day_filter_tabs(create_line, day_filter, search_engine):
             content=Column(
                 [SearchField(create_line, search_engine),
                  my_table],
-                scroll=True
+                scroll=ScrollMode.ALWAYS
             )
         )
         if day_of_week != i:
@@ -84,35 +124,55 @@ def pharma_sys_note_app(page: Page):
         tab_of_day = day_filter.tabs[index]
         search_field = tab_of_day.content.controls[0]
 
-        print(event.control, "pesquisando no banco")
-        print(search_field.search_field.value, "pesquisando no banco")
         cursor = conn.cursor()
         query = "SELECT * FROM produtos WHERE codigo = ? or name = ?"
-        cursor.execute(query, (search_field.search_field.value, search_field.search_field.value))
+        cursor.execute(
+            query,
+            (search_field.search_field.value, search_field.search_field.value)
+        )
         items = cursor.fetchall()
         print(items)
         if not items:
-            page.snack_bar = SnackBar(Text("Produto não cadastrado"), bgcolor='red')
+            page.snack_bar = SnackBar(
+                Text(PROD_NOTFOUND), bgcolor='red')
             page.snack_bar.open = True
-            show_confirm_dialog(_cadastrar, close_dlg, event, "Deseja Cadastrar este produto?", 'green')
+            show_confirm_dialog(
+                _cadastrar,
+                close_dlg,
+                event,
+                WANT_TO_REGISTER,
+                'green'
+            )
         else:
             create_line(items[0])
 
     def savecon(event):
-        status, i_name, i_code, i_info, i_price, i_cont, i_lab, i_validade, i_type, i_lote, i_pres = get_con_fields()
-        print(i_name, i_code, i_info, i_price, i_cont, i_lab, i_validade, i_type, i_lote, i_pres)
+        status, i_name, i_code, i_info, i_price, i_cont, i_lab, i_validade, i_type, i_lote, i_pres = get_con_fields()  # NOQA
+        print(
+            i_name, i_code, i_info, i_price, i_cont, i_lab, i_validade,
+            i_type, i_lote, i_pres
+        )
         c = conn.cursor()
         c.execute(
-            "INSERT INTO produtos (codigo, name, description, value, count, laboratorio, generico, lote, validade, presetation) VALUES(?,?,?,?,?,?,?,?,?,?)",
-            (i_code, i_name, i_info, i_price, i_cont, i_lab, i_validade, i_type, i_lote, i_pres)
+            "INSERT INTO produtos (codigo, name, description, value, count, "
+            "laboratorio, generico, lote, validade, presetation) VALUES(?,?,"
+            "?,?,?,?,?,?,?,?)",
+            (i_code, i_name, i_info, i_price, i_cont, i_lab, i_validade,
+             i_type, i_lote, i_pres)
         )
         conn.commit()
         if status:
             hidecon(event)
-            page.snack_bar = SnackBar(Text("Sucess Input"), bgcolor='green')
+            page.snack_bar = SnackBar(
+                Text(SUCESS),
+                bgcolor='green'
+            )
             page.snack_bar.open = True
         else:
-            page.snack_bar = SnackBar(Text("Não Cadastrado"), bgcolor='orange')
+            page.snack_bar = SnackBar(
+                Text(NOT_REGISTERED),
+                bgcolor='orange'
+            )
             page.snack_bar.open = True
         page.update()
 
@@ -127,11 +187,16 @@ def pharma_sys_note_app(page: Page):
         i_type = cadastro.product_generic.value
         i_lote = cadastro.product_lote.value
         i_pres = cadastro.product_presentation.value
-        if all([i_name, i_code, i_info, i_price, i_cont, i_lab, i_valid, i_type, i_lote, i_pres]):
-            return True, i_name, i_code, i_info, i_price, i_cont, i_lab, i_valid, i_type, i_lote, i_pres
+        if all([
+            i_name, i_code, i_info, i_price, i_cont, i_lab, i_valid, i_type,
+            i_lote, i_pres
+        ]):
+            return (True, i_name, i_code, i_info, i_price, i_cont, i_lab,
+                    i_valid, i_type, i_lote, i_pres)
         else:
-            show_alert_dialog("Preencha todos os campos!")
-            return False, i_name, i_code, i_info, i_price, i_cont, i_lab, i_valid, i_type, i_lote, i_pres
+            show_alert_dialog(FILL_FIELDS)
+            return (False, i_name, i_code, i_info, i_price, i_cont, i_lab,
+                    i_valid, i_type, i_lote, i_pres)
 
     def hidecon(event):
         cadastro.offset = transform.Offset(2, 0)
@@ -167,7 +232,7 @@ def pharma_sys_note_app(page: Page):
             else:
                 update_permanent_line(i_cnt, i_name, i_pres, i_val, line)
         else:
-            show_alert_dialog("Preencher todos os campos!")
+            show_alert_dialog(FILL_FIELDS)
 
     def anotation_save(line: Anotation):
         if is_not_empty_fields(line):
@@ -178,13 +243,14 @@ def pharma_sys_note_app(page: Page):
             else:
                 create_permanent_line(i_cnt, i_name, i_pres, i_val, line)
         else:
-            show_alert_dialog("Preencher todos os campos!")
+            show_alert_dialog(FILL_FIELDS)
 
     def update_permanent_line(i_cnt, i_name, i_pres, i_val, line):
         try:
             myid = id_edit.value
             set_fields_values(i_cnt, i_name, i_pres, i_val, line)
-            my_table = day_filter.tabs[day_filter.selected_index].content.controls[1]
+            selected_tab = day_filter.tabs[day_filter.selected_index]
+            my_table = selected_tab.content.controls[1]
             c = conn.cursor()
             c.execute(
                 "UPDATE items SET timestamp=?, name=?, count=?, presetation=?, value=? WHERE id=?",
@@ -205,24 +271,24 @@ def pharma_sys_note_app(page: Page):
         my_table = day_filter.tabs[day_filter.selected_index].content.controls[
             1]
         if insert_line(line):
-            page.snack_bar = SnackBar(Text("Sucess Input"), bgcolor='green')
+            page.snack_bar = SnackBar(Text(SUCESS), bgcolor='green')
             page.snack_bar.open = True
             my_table.rows.clear()
             read_db()
             change_line_visibles(line)
             page.update()
         else:
-            page.snack_bar = SnackBar(Text("Falha ao salvar "), bgcolor='red')
+            page.snack_bar = SnackBar(Text(FAIL), bgcolor='red')
             page.snack_bar.open = True
             page.update()
-
 
     def insert_line(line):
         try:
             c = conn.cursor()
             c.execute(
                 "INSERT INTO items (timestamp, name, count, presetation, value) VALUES(?,?,?,?,?)",
-                (line.timestamp.value, line.item_name.value, line.item_count.value,
+                (line.timestamp.value, line.item_name.value,
+                 line.item_count.value,
                  line.item_presentation.value, line.item_value.value)
             )
             conn.commit()
@@ -246,23 +312,18 @@ def pharma_sys_note_app(page: Page):
                            DataCell(Text(item[3])),
                            DataCell(Text(item[2])),
                            DataCell(Text(item[5])),
-                           DataCell(
-                               Row([
-                                   IconButton(
-                                       "edit",
-                                       data=item,
-                                       on_click=anotation_edit),
-                                   IconButton("delete",
-                                              data=item[0],
-                                              on_click=delete_line)
-                               ]
-                               ))],
+                           DataCell(Row([
+                               IconButton(
+                                   "edit", data=item, on_click=anotation_edit),
+                               IconButton(
+                                   "delete", data=item[0], on_click=delete_line)
+                           ]))],
                 )
             )
 
     def get_data_table():
-        my_table = day_filter.tabs[day_filter.selected_index].content.controls[
-            1]
+        selected_tab = day_filter.tabs[day_filter.selected_index]
+        my_table = selected_tab.content.controls[1]
         return my_table
 
     def close_dlg(event):
@@ -294,7 +355,8 @@ def pharma_sys_note_app(page: Page):
             page.update()
             return
         my_table = get_data_table()
-        show_confirm_dialog(_delete, close_dlg, event, "Deseja realmente DELETAR este item?", 'red')
+        show_confirm_dialog(_delete, close_dlg, event,
+                            "Deseja realmente DELETAR este item?", 'red')
 
     def show_confirm_dialog(confirm, refuse, event, sys_msg, confirm_color):
         dlg_modal = ft.AlertDialog(
@@ -306,7 +368,7 @@ def pharma_sys_note_app(page: Page):
                 expand=True,
                 border_radius=0,
                 border=ft.border.all(1, ft.colors.BLUE_GREY_200)),
-            content=ft.Text(sys_msg, weight='bold'),
+            content=ft.Text(sys_msg, weight=FontWeight.BOLD),
             actions=[
                 ft.ElevatedButton(
                     "Sim",
@@ -325,7 +387,6 @@ def pharma_sys_note_app(page: Page):
         page.update()
 
     def change_line_visibles(line):
-        # print(day_filter.tabs[day_filter.selected_index].content.controls)
         del day_filter.tabs[day_filter.selected_index].content.controls[2]
         line.view.visible = False
         line.control_buttons.update()
@@ -363,18 +424,18 @@ def pharma_sys_note_app(page: Page):
             show_alert_dialog("Insira Valores numéricos!")
             return False, item_value, item_count
 
-    def create_line(e: ControlEvent):
-        print(f'create line for {e}')
+    def create_line(element):
+        print(f'create line for {element}')
         anotacao = Anotation(anotation_save, anotation_edit, delete_line)
         index = day_filter.selected_index
         tab_of_day = day_filter.tabs[index]
         search_field = tab_of_day.content.controls[0]
-        if isinstance(e, ControlEvent):
+        if isinstance(element, ControlEvent):
             anotacao.item_name_field.value = search_field.search_field.value
         else:
-            anotacao.item_name_field.value = e[2]
-            anotacao.item_presentation_field.value = e[3]
-            anotacao.item_value_field.value = e[-2]
+            anotacao.item_name_field.value = element[2]
+            anotacao.item_presentation_field.value = element[3]
+            anotacao.item_value_field.value = element[-2]
 
         tab_of_day.content.controls.append(anotacao)
         search_field.search_field.value = ""
@@ -421,11 +482,8 @@ def pharma_sys_note_app(page: Page):
     rail = create_nav_rail()
     page.scroll = "allways"
     read_db()
-    # cadastro = Cadastro()
-    page.add(Column([
-        Row(
-            [rail, ft.VerticalDivider(width=1), day_filter],
-            expand=True),
-        # cadastro
-    ], expand=True)
+    page.add(
+        Column([
+            Row([rail, ft.VerticalDivider(width=1), day_filter], expand=True)],
+            expand=True)
     )
