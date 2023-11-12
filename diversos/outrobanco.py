@@ -21,12 +21,18 @@ def main(page: Page):
             c = conn.cursor()
             c.execute(
                 "INSERT INTO USERS (name, age, contact, email, address, gender) VALUES(?,?,?,?,?,?)",
-                (name.value, age.value, contact.value, email.value,
-                 address.value, gender.value)
+                (
+                    name.value,
+                    age.value,
+                    contact.value,
+                    email.value,
+                    address.value,
+                    gender.value,
+                ),
             )
             conn.commit()
             inputcon.offset = transform.Offset(2, 0)
-            page.snack_bar = SnackBar(Text("Sucess Input"), bgcolor='green')
+            page.snack_bar = SnackBar(Text("Sucess Input"), bgcolor="green")
             page.snack_bar.open = True
             tb.rows.clear()
             calldb()
@@ -40,10 +46,11 @@ def main(page: Page):
     contact = TextField(label="contact")
     email = TextField(label="email")
     address = TextField(label="address")
-    gender = RadioGroup(content=Column([
-        Radio(value='M', label="Masculino"),
-        Radio(value='F', label="Feminino")
-    ]))
+    gender = RadioGroup(
+        content=Column(
+            [Radio(value="M", label="Masculino"), Radio(value="F", label="Feminino")]
+        )
+    )
 
     inputcon = Card(
         offset=transform.Offset(2, 0),
@@ -51,30 +58,34 @@ def main(page: Page):
         elevation=30,
         content=Container(
             bgcolor="green200",
-            content=Column([
-                Row([
-                    Text("Novo Cadastro", size=20, weight="bold"),
-                    IconButton(icon="close", icon_size=30, on_click=hidecon)
-                ]),
-                name,
-                contact,
-                age,
-                gender,
-                email,
-                address,
-                FilledButton("Salvar", on_click=savedata)
-            ]
-            )
-        )
+            content=Column(
+                [
+                    Row(
+                        [
+                            Text("Novo Cadastro", size=20, weight="bold"),
+                            IconButton(icon="close", icon_size=30, on_click=hidecon),
+                        ]
+                    ),
+                    name,
+                    contact,
+                    age,
+                    gender,
+                    email,
+                    address,
+                    FilledButton("Salvar", on_click=savedata),
+                ]
+            ),
+        ),
     )
 
     page.add(
-        Column([
-            Text("CADASTRAR USUÁRIOS", size=30, weight='bold'),
-            ElevatedButton("Cadastrar", on_click=add_input),
-            my_table,
-            inputcon
-        ]
+        Column(
+            [
+                Text("CADASTRAR USUÁRIOS", size=30, weight="bold"),
+                ElevatedButton("Cadastrar", on_click=add_input),
+                my_table,
+                inputcon,
+            ]
         )
     )
 
