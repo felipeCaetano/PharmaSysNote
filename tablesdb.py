@@ -1,5 +1,10 @@
-from sqlalchemy import create_engine, String, ForeignKey, Integer, Float
+import sqlite3
+
+from sqlalchemy import create_engine, Float, ForeignKey, Integer, String
 from sqlalchemy.orm import DeclarativeBase
+from sqlalchemy.orm import Mapped
+from sqlalchemy.orm import mapped_column
+from sqlalchemy.orm import relationship
 
 engine = create_engine("sqlite+pysqlite:///:memory:", echo=True)
 
@@ -7,12 +12,6 @@ engine = create_engine("sqlite+pysqlite:///:memory:", echo=True)
 class Base(DeclarativeBase):
     pass
 
-
-from sqlalchemy.orm import Mapped
-from sqlalchemy.orm import mapped_column
-from sqlalchemy.orm import relationship
-
-import sqlite3
 
 conn = sqlite3.connect("diversos/db/dbpharm.db", check_same_thread=False)
 
@@ -27,8 +26,10 @@ class Itens(Base):
     value = mapped_column(Float, nullable=False)
 
     def __repr__(self) -> str:
-        return f"Item(id={self.id!r}, name={self.name!r}, count={self.count!r}," \
-               f"presentation{self.presentation}, value={self.value})"
+        return (
+            f"Item(id={self.id!r}, name={self.name!r}, count={self.count!r},"
+            f"presentation{self.presentation}, value={self.value})"
+        )
 
 
 class User(Base):
@@ -58,16 +59,19 @@ Base.metadata.create_all(engine)
 
 def create_table():
     c = conn.cursor()
-    c.execute("""CREATE TABLE IF NOT EXISTS items (
+    c.execute(
+        """CREATE TABLE IF NOT EXISTS items (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT,
     presetation TEXT,
     count INTEGER,
     timestamp TEXT,
     value FLOAT)
-    """)
+    """
+    )
 
-    c.execute("""CREATE TABLE IF NOT EXISTS produtos (
+    c.execute(
+        """CREATE TABLE IF NOT EXISTS produtos (
        id INTEGER PRIMARY KEY AUTOINCREMENT,
        codigo TEXT,
        name TEXT,
@@ -79,7 +83,8 @@ def create_table():
        lote TEXT,
        validade TEXT,
        value FLOAT)
-       """)
+       """
+    )
 
     # c.execute("""ALTER TABLE produtos ADD COLUMN description TEXT""")
 

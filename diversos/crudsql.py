@@ -9,11 +9,11 @@ def main(page: Page):
     your_id = Text("")
     my_table = DataTable(
         columns=[
-            DataColumn(Text('id')),
-            DataColumn(Text('name')),
-            DataColumn(Text('address'))
+            DataColumn(Text("id")),
+            DataColumn(Text("name")),
+            DataColumn(Text("address")),
         ],
-        rows=[]
+        rows=[],
     )
 
     def edit_index(e_id, r):
@@ -28,27 +28,30 @@ def main(page: Page):
     def add_new_data(event):
         my_table.rows.append(
             DataRow(
-                cells=[DataCell(Text(len(my_table.rows))),
-                       DataCell(Text(name.value)),
-                       DataCell(Text("Fake adress"))],
+                cells=[
+                    DataCell(Text(len(my_table.rows))),
+                    DataCell(Text(name.value)),
+                    DataCell(Text("Fake adress")),
+                ],
                 on_select_changed=lambda e: edit_index(
                     e.control.cells[0].content.value,
-                    e.control.cells[1].content.value, )
+                    e.control.cells[1].content.value,
+                ),
             )
         )
         name.value = ""
         page.update()
 
     add_button = ElevatedButton(
-        "add", bgcolor="blue", color='white', on_click=add_new_data
+        "add", bgcolor="blue", color="white", on_click=add_new_data
     )
 
     def delete_index(event):
         print("you id is= ", your_id.value)
         del my_table.rows[int(your_id.value)]
         page.snack_bar = SnackBar(
-            Text(f'succes delete {your_id.value=}', color='white'),
-            bgcolor='red',
+            Text(f"succes delete {your_id.value=}", color="white"),
+            bgcolor="red",
         )
         page.snack_bar.open = True
         change_visible_buttons()
@@ -60,7 +63,7 @@ def main(page: Page):
         edit_button.visible = not edit_button.visible
 
     delete_button = ElevatedButton(
-        "delete", bgcolor="red", color='white', on_click=delete_index
+        "delete", bgcolor="red", color="white", on_click=delete_index
     )
 
     def editandsave(event):
@@ -69,23 +72,21 @@ def main(page: Page):
         page.update()
 
     edit_button = ElevatedButton(
-        "edit", bgcolor="orange", color='white', on_click=editandsave
+        "edit", bgcolor="orange", color="white", on_click=editandsave
     )
 
     delete_button.visible = False
     edit_button.visible = False
 
     page.add(
-        Column([
-            Text("My CRUD sample", size=30, weight='bold'),
-            name,
-            Row([
-                add_button,
-                delete_button,
-                edit_button
-            ]),
-            my_table
-        ])
+        Column(
+            [
+                Text("My CRUD sample", size=30, weight="bold"),
+                name,
+                Row([add_button, delete_button, edit_button]),
+                my_table,
+            ]
+        )
     )
 
 

@@ -1,9 +1,10 @@
-from flet_core import (UserControl, TextField, TextAlign, IconButton, icons,
-                       Row, FloatingActionButton)
+from flet_core import (FloatingActionButton, IconButton, icons, Row, TextAlign,
+                       TextField, UserControl)
+
+from appstrings import SEARCH_FIELD
 
 
 class SearchField(UserControl):
-
     def __init__(self, callback, search_engine):
         super(SearchField, self).__init__()
         self.view = Row()
@@ -11,11 +12,9 @@ class SearchField(UserControl):
         self.search_function = search_engine
         self.search_field = TextField(
             text_align=TextAlign.LEFT,
-            hint_text="Digite ou Pesquise",
+            hint_text=SEARCH_FIELD,
             expand=True,
-            suffix=IconButton(
-                icon=icons.SEARCH,
-                on_click=self.search_function)
+            suffix=IconButton(icon=icons.SEARCH, on_click=self.search_function),
         )
 
     def build(self):
