@@ -12,7 +12,7 @@ from appstrings import (ABOUT, APP_NAME, CHARTS, COLUMN_0, COLUMN_1, COLUMN_2,
                         INSERT_NUMBERS, LOGIN, LOGOUT, MONDAY, NO,
                         NOT_REGISTERED, PLS_CONFIRME, PROD_NOTFOUND, SATURDAY,
                         SUCCESS, SUNDAY, THURSDAY, TUESDAY, WANT_TO_REGISTER,
-                        WEDNESDAY, YES)
+                        WEDNESDAY, YES, CLOSE_DAY)
 from cadastro import Cadastro
 from search_field import SearchField
 from tablesdb import conn, create_table
@@ -72,7 +72,17 @@ def create_day_filter_tabs(create_line, day_filter, search_engine):
         tab = Tab(
             text=days_of_week[i],
             content=Column(
-                [SearchField(create_line, search_engine), my_table],
+                [
+                    SearchField(create_line, search_engine),
+                    my_table,
+                    ft.Divider(),
+                    Row([
+                        ft.ElevatedButton(
+                            CLOSE_DAY, bgcolor='red', color='white')
+                    ],
+                        alignment=ft.MainAxisAlignment.END
+                    )
+                ],
                 scroll=ScrollMode.ALWAYS,
             ),
         )
@@ -85,10 +95,7 @@ def pharma_sys_note_app(page: Page):
     id_edit = Text()
 
     def search_engine(event: ControlEvent):
-        index = day_filter.selected_index
-        tab_of_day = day_filter.tabs[index]
-        search_field = tab_of_day.content.controls[0]
-
+        search_field, _ = get_search_field()
         cursor = conn.cursor()
         query = "SELECT * FROM produtos WHERE codigo = ? or name = ?"
         cursor.execute(
@@ -96,22 +103,18 @@ def pharma_sys_note_app(page: Page):
             (search_field.search_field.value, search_field.search_field.value)
         )
         items = cursor.fetchall()
-        # print(items)
         if not items:
             page.snack_bar = SnackBar(Text(PROD_NOTFOUND), bgcolor="red")
             page.snack_bar.open = True
             show_confirm_dialog(
                 _cadastrar, close_dlg, event, WANT_TO_REGISTER, "green")
+            page.update()
         else:
             create_line(items[0])
 
     def savecon(event):
         (status, i_name, i_code, i_info, i_price, i_cont, i_lab, i_validade,
          i_type, i_lote, i_pres) = get_con_fields()  # NOQA
-        # print(
-        #     i_name, i_code, i_info, i_price, i_cont, i_lab, i_validade,
-        #     i_type, i_lote, i_pres
-        # )
         c = conn.cursor()
         c.execute(
             "INSERT INTO produtos (codigo, name, description, value, count, "
@@ -154,18 +157,18 @@ def pharma_sys_note_app(page: Page):
         page.remove(cadastro)
         page.update()
 
-    cadastro = Cadastro(savecon, hidecon)
-
     def _cadastrar(event):
         close_dlg(event)
         cadastro.offset = transform.Offset(0, 0)
+        search_field, _ = get_search_field()
+        cadastro.prod_code.value = search_field.search_field.value
         page.add(cadastro)
         page.update()
 
-    def anotation_edit(event: ControlEvent):
+    def annotation_edit(event: ControlEvent):
         index = day_filter.selected_index
         tab_of_day = day_filter.tabs[index]
-        anotacao = Anotation(anotation_update, anotation_edit, del_line)
+        anotacao = Anotation(annotation_update, annotation_edit, del_line)
         anotacao.item_name_field.value = event.control.data[1]
         anotacao.item_count_field.value = event.control.data[3]
         anotacao.item_presentation_field.value = event.control.data[2]
@@ -174,7 +177,7 @@ def pharma_sys_note_app(page: Page):
         tab_of_day.content.controls.append(anotacao)
         page.update()
 
-    def anotation_update(line: Anotation):
+    def annotation_update(line: Anotation):
         if is_not_empty_fields(line):
             i_cnt, i_name, i_pres, i_val = get_fields_values(line)
             valid, i_val, i_cnt = check_numeric_values(i_cnt, i_val)
@@ -185,7 +188,7 @@ def pharma_sys_note_app(page: Page):
         else:
             show_alert_dialog(FILL_FIELDS)
 
-    def anotation_save(line: Anotation):
+    def annotation_save(line: Anotation):
         if is_not_empty_fields(line):
             i_cnt, i_name, i_pres, i_val = get_fields_values(line)
             valid, i_val, i_cnt = check_numeric_values(i_cnt, i_val)
@@ -272,16 +275,14 @@ def pharma_sys_note_app(page: Page):
                         DataCell(Text(item[3])),
                         DataCell(Text(item[2])),
                         DataCell(Text(item[5])),
-                        DataCell(
-                            Row(
-                                [IconButton(
-                                    "edit", data=item, on_click=anotation_edit
-                                ),
-                                 IconButton(
-                                     "delete", data=item[0], on_click=del_line
-                                    ),
-                                ]
-                            )
+                        DataCell(Row([
+                            IconButton(
+                                "edit", data=item, on_click=annotation_edit
+                            ),
+                            IconButton(
+                                "delete", data=item[0], on_click=del_line
+                            ),
+                        ])
                         ),
                     ],
                 )
@@ -351,7 +352,7 @@ def pharma_sys_note_app(page: Page):
         page.update()
 
     def change_line_visibles(line):
-        del day_filter.tabs[day_filter.selected_index].content.controls[2]
+        del day_filter.tabs[day_filter.selected_index].content.controls[4]
         line.view.visible = False
         line.control_buttons.update()
 
@@ -389,21 +390,25 @@ def pharma_sys_note_app(page: Page):
             return False, item_value, item_count
 
     def create_line(element):
-        anotacao = Anotation(anotation_save, anotation_edit, del_line)
-        index = day_filter.selected_index
-        tab_of_day = day_filter.tabs[index]
-        search_field = tab_of_day.content.controls[0]
+        anotacao = Anotation(annotation_save, annotation_edit, del_line)
+        search_field, tab_of_day = get_search_field()
         if isinstance(element, ControlEvent):
             anotacao.item_name_field.value = search_field.search_field.value
         else:
             anotacao.item_name_field.value = element[2]
-            anotacao.item_presentation_field.value = element[3]
-            anotacao.item_value_field.value = element[-2]
+            anotacao.item_presentation_field.value = str(element[4]).capitalize()
+            anotacao.item_value_field.value = element[-1]
 
         tab_of_day.content.controls.append(anotacao)
         search_field.search_field.value = ""
         search_field.update()
         page.update()
+
+    def get_search_field():
+        index = day_filter.selected_index
+        tab_of_day = day_filter.tabs[index]
+        search_field = tab_of_day.content.controls[0]
+        return search_field, tab_of_day
 
     def get_timestamp():
         now = datetime.now()
@@ -440,7 +445,7 @@ def pharma_sys_note_app(page: Page):
     day_filter.selected_index = get_tab_day()
 
     page.appbar.actions = create_popupmenubuttons()
-
+    cadastro = Cadastro(savecon, hidecon)
     rail = create_nav_rail()
     page.scroll = "allways"
     read_db()
