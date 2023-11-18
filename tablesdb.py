@@ -5,6 +5,7 @@ from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.orm import Mapped
 from sqlalchemy.orm import mapped_column
 from sqlalchemy.orm import relationship
+from uuid import uuid4
 
 engine = create_engine("sqlite+pysqlite:///:memory:", echo=True)
 
@@ -32,11 +33,17 @@ class Itens(Base):
         )
 
 
+def CreateUUID():
+    return uuid4().hex
+
+
 class User(Base):
     __tablename__ = "user_account"
     id = mapped_column(Integer, primary_key=True)
+    default = CreateUUID()
     name = mapped_column(String(30), nullable=False)
-    fullname = mapped_column(String)
+    email = mapped_column(String(300), unique=True, nullable=False)
+    password = mapped_column(String(), nullable=False)
     addresses = relationship("Address", back_populates="user")
 
     def __repr__(self) -> str:

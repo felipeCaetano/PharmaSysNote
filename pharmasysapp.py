@@ -415,16 +415,19 @@ def pharma_sys_note_app(page: Page):
         timestamp = now.strftime("%d/%m/%Y, %H:%M:%S")
         return timestamp
 
-    def create_menu_item(icon=None, text=""):
+    def create_menu_item(icon=None, text="", callback=None):
         if not icon and not text:
             return ft.PopupMenuItem()
-        return ft.PopupMenuItem(icon=icon, text=text)
+        return ft.PopupMenuItem(icon=icon, text=text, on_click=callback)
+
+    def create_login(event):
+        print("Abrir tela de login")
 
     def create_popupmenubuttons():
         return [
             ft.PopupMenuButton(
                 items=[
-                    create_menu_item(icons.LOGIN, LOGIN),
+                    create_menu_item(icons.LOGIN, LOGIN, create_login),
                     create_menu_item(),
                     create_menu_item(icons.PIE_CHART, CHARTS),
                     create_menu_item(),
