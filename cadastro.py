@@ -44,6 +44,8 @@ class Cadastro(flet.UserControl):
             animate_offset=Animation(500, curve=AnimationCurve.EASE_IN),
             elevation=30,
             content=Container(
+                width=960,
+                height=720,
                 margin=10,
                 padding=12,
                 alignment=alignment.center,

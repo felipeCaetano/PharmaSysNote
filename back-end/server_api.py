@@ -18,6 +18,7 @@ app = Flask(__name__)
 app.config.from_object(AppConfiguration)
 data_base.init_app(app)
 
+
 @app.route("/register", methods=["POST"])
 def Register():
     user_data = request.get_json()
@@ -26,10 +27,12 @@ def Register():
     data_base.session.commit()
     return True, 201
 
+
 @app.route("/login", methods=["POST"])
 def Login():
     email = request.json['email']
     password = request.json["password"]
+
 
 with app.app_context():
     data_base.create_all()
