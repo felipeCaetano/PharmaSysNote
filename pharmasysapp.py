@@ -1,31 +1,39 @@
 from datetime import datetime
+from sqlite3 import Error
 
 import flet as ft
-from flet_core import (Column, ControlEvent, DataCell, DataColumn, DataRow,
-                       DataTable, FontWeight, IconButton, icons, Page, Row,
-                       ScrollMode, SnackBar, Tab, Tabs, Text, transform)
+from flet_core import (colors, Column, ControlEvent, DataCell, DataColumn,
+                       DataRow, DataTable, FontWeight, IconButton, icons,
+                       Page, Row, ScrollMode, SnackBar, Tab, Tabs, Text,
+                       transform)
 
-from annotation import Anotation
-from appstrings import (ABOUT, APP_NAME, CHARTS, COLUMN_0, COLUMN_1, COLUMN_2,
-                        COLUMN_3, COLUMN_4, COLUMN_5, CONFIGS, DELETE_ITEM,
-                        FAIL, FILL_FIELDS, FRIDAY, FT_ANOTA, HELP,
-                        INSERT_NUMBERS, LOGIN, LOGOUT, MONDAY, NO,
-                        NOT_REGISTERED, PLS_CONFIRME, PROD_NOTFOUND, SATURDAY,
-                        SUCCESS, SUNDAY, THURSDAY, TUESDAY, WANT_TO_REGISTER,
-                        WEDNESDAY, YES, CLOSE_DAY)
-from cadastro import Cadastro
+from annotation import Annotation
+from appstrings import (ABOUT, ALTER_PROD, ALTER_PRODUCT, APP_NAME, CHARTS,
+                        CLOSE_DAY,
+                        COLUMN_0, COLUMN_1, COLUMN_2, COLUMN_3, COLUMN_4,
+                        COLUMN_5, CONFIGS, DELETE_ITEM, FAIL, FILL_FIELDS,
+                        FRIDAY, FT_ANOTA, HELP, INSERT_NUMBERS, LOGIN, LOGOUT,
+                        MONDAY, NEW_REGISTER, NO, NOT_REGISTERED, PLS_CONFIRME,
+                        PROD_NOTFOUND, REALLY_CLOSE, SATURDAY, SUCCESS, SUNDAY,
+                        THURSDAY,
+                        TUESDAY, WANT_TO_REGISTER, WEDNESDAY, YES)
+from cadastro import Alterador, Cadastro
 from search_field import SearchField
 from tablesdb import conn, create_table
+
+ERROR_ON_LOAD = "Erro ao carregar dados!"
+
+DELETE_ERROR = "Erro ao deletar!"
 
 days_of_week = [MONDAY, TUESDAY, WEDNESDAY, THURSDAY, FRIDAY, SATURDAY, SUNDAY]
 
 
 def is_not_empty_fields(line):
     return (
-        line.item_value_field.value != ""
-        and line.item_name_field.value != ""
-        and line.item_count_field.value != ""
-        and line.item_presentation_field.value is not None
+            line.item_value_field.value != ""
+            and line.item_name_field.value != ""
+            and line.item_count_field.value != ""
+            and line.item_presentation_field.value is not None
     )
 
 
@@ -54,7 +62,7 @@ def get_tab_day():
     return now.weekday()
 
 
-def create_day_filter_tabs(create_line, day_filter, search_engine):
+def create_day_filter_tabs(create_line, day_filter, search_engine, close_day):
     day_of_week = get_tab_day()
     for i in range(7):
         my_table = DataTable(
@@ -78,7 +86,8 @@ def create_day_filter_tabs(create_line, day_filter, search_engine):
                     ft.Divider(),
                     Row([
                         ft.ElevatedButton(
-                            CLOSE_DAY, bgcolor='red', color='white')
+                            CLOSE_DAY, bgcolor='red', color='white',
+                            on_click=close_day)
                     ],
                         alignment=ft.MainAxisAlignment.END
                     )
@@ -94,55 +103,122 @@ def create_day_filter_tabs(create_line, day_filter, search_engine):
 def pharma_sys_note_app(page: Page):
     id_edit = Text()
 
+    def search_product(event):
+        product_code = up_cadastro.prod_code.value
+        items = select_products(product_code)
+        if not items:
+            open_snackbar(PROD_NOTFOUND, colors.RED)
+            show_confirm_dialog(
+                _show_cadastrar,
+                close_dlg, event,
+                WANT_TO_REGISTER,
+                colors.GREEN)
+            page.update()
+        else:
+            set_con_fields(items[0])
+            up_cadastro.data = items[0]
+
     def search_engine(event: ControlEvent):
         search_field, _ = get_search_field()
-        cursor = conn.cursor()
-        query = "SELECT * FROM produtos WHERE codigo = ? or name = ?"
-        cursor.execute(
-            query,
-            (search_field.search_field.value, search_field.search_field.value)
-        )
-        items = cursor.fetchall()
+        items = select_products(search_field.search_field.value)
         if not items:
-            page.snack_bar = SnackBar(Text(PROD_NOTFOUND), bgcolor="red")
-            page.snack_bar.open = True
+            open_snackbar(PROD_NOTFOUND, colors.RED)
             show_confirm_dialog(
-                _cadastrar, close_dlg, event, WANT_TO_REGISTER, "green")
+                _show_cadastrar,
+                close_dlg, event,
+                WANT_TO_REGISTER,
+                colors.GREEN)
             page.update()
         else:
             create_line(items[0])
 
+    def open_snackbar(snack_msg, snack_color):
+        page.snack_bar = SnackBar(Text(snack_msg), bgcolor=snack_color)
+        page.snack_bar.open = True
+        page.update()
+
+    def select_products(product_code):
+        cursor = conn.cursor()
+        query = "SELECT * FROM produtos WHERE codigo = ? or name = ?"
+        cursor.execute(
+            query,
+            (product_code, product_code)
+        )
+        items = cursor.fetchall()
+        return items
+
+    def editcon(event):
+        my_id = up_cadastro.data[0]
+        (status, i_name, i_code, i_info, i_price, i_cont, i_lab, i_validade,
+         i_type, i_lote, i_pres) = get_con_fields(up_cadastro)
+        # set_con_fields(item)
+        status = update_products(
+            i_code, i_cont, i_info, i_lab, i_lote, i_name, i_pres,
+            i_price, i_type, i_validade, my_id)
+        if status:
+            hidecon(up_cadastro)
+            open_snackbar(SUCCESS, colors.GREEN)
+            read_sales_day()
+        else:
+            open_snackbar(FAIL, colors.RED)
+
+    def update_products(i_code, i_cont, i_info, i_lab, i_lote, i_name, i_pres,
+                        i_price, i_type, i_validade, my_id):
+        c = conn.cursor()
+        try:
+            c.execute(
+                "UPDATE produtos SET codigo=?, name=?, description=?, value=?, "
+                "count=?, laboratorio=?, generico=?, lote=?, validade=?, "
+                "presetation=? WHERE id=?",
+                (i_code, i_name, i_info, i_price, i_cont, i_lab, i_validade,
+                 i_type, i_lote, i_pres, my_id))
+            conn.commit()
+            return True
+        except Error:
+            return False
+
+    def set_con_fields(item):
+        up_cadastro.product_name.value = item[2]
+        up_cadastro.product_info.value = item[3]
+        up_cadastro.product_presentation.value = item[4]
+        up_cadastro.product_total_cnt.value = item[5]
+        up_cadastro.product_lab.value = item[6]
+        up_cadastro.product_date.value = item[7]
+        up_cadastro.product_generic.value = item[8]
+        up_cadastro.product_lote.value = item[9]
+        up_cadastro.product_price.value = item[10]
+        up_cadastro.update()
+        page.update()
+
     def savecon(event):
         (status, i_name, i_code, i_info, i_price, i_cont, i_lab, i_validade,
-         i_type, i_lote, i_pres) = get_con_fields()  # NOQA
+         i_type, i_lote, i_pres) = get_con_fields(cadastro)  # NOQA
         c = conn.cursor()
         c.execute(
             "INSERT INTO produtos (codigo, name, description, value, count, "
             "laboratorio, generico, lote, validade, presetation) VALUES(?,?,"
             "?,?,?,?,?,?,?,?)",
             (i_code, i_name, i_info, i_price, i_cont, i_lab, i_validade, i_type,
-             i_lote, i_pres, ))
+             i_lote, i_pres,))
         conn.commit()
         if status:
-            hidecon(event)
-            page.snack_bar = SnackBar(Text(SUCCESS), bgcolor="green")
-            page.snack_bar.open = True
+            hidecon(cadastro)
+            open_snackbar(SUCCESS, colors.GREEN)
         else:
-            page.snack_bar = SnackBar(Text(NOT_REGISTERED), bgcolor="orange")
-            page.snack_bar.open = True
+            open_snackbar(NOT_REGISTERED, colors.ORANGE)
         page.update()
 
-    def get_con_fields():
-        i_name = cadastro.product_name.value
-        i_code = cadastro.prod_code.value
-        i_info = cadastro.product_info.value
-        i_price = cadastro.product_price.value
-        i_cont = cadastro.product_total_cnt.value
-        i_lab = cadastro.product_lab.value
-        i_valid = cadastro.product_date.value
-        i_type = cadastro.product_generic.value
-        i_lote = cadastro.product_lote.value
-        i_pres = cadastro.product_presentation.value
+    def get_con_fields(form):
+        i_name = form.product_name.value
+        i_code = form.prod_code.value
+        i_info = form.product_info.value
+        i_price = form.product_price.value
+        i_cont = form.product_total_cnt.value
+        i_lab = form.product_lab.value
+        i_valid = form.product_date.value
+        i_type = form.product_generic.value
+        i_lote = form.product_lote.value
+        i_pres = form.product_presentation.value
         if all([i_name, i_code, i_info, i_price, i_cont, i_lab, i_valid, i_type,
                 i_lote, i_pres]):
             return (True, i_name, i_code, i_info, i_price, i_cont, i_lab,
@@ -152,12 +228,12 @@ def pharma_sys_note_app(page: Page):
             return (False, i_name, i_code, i_info, i_price, i_cont, i_lab,
                     i_valid, i_type, i_lote, i_pres)
 
-    def hidecon(event):
-        cadastro.offset = transform.Offset(2, 0)
-        page.remove(cadastro)
+    def hidecon(hide_obj):
+        hide_obj.offset = transform.Offset(2, 0)
+        page.remove(hide_obj)
         page.update()
 
-    def _cadastrar(event):
+    def _show_cadastrar(event):
         close_dlg(event)
         cadastro.offset = transform.Offset(0, 0)
         search_field, _ = get_search_field()
@@ -165,10 +241,17 @@ def pharma_sys_note_app(page: Page):
         page.add(cadastro)
         page.update()
 
+    def update_product(event):
+        up_cadastro.offset = transform.Offset(0, 0)
+        up_cadastro.prod_code.suffix.on_click = search_product
+        up_cadastro.inputcon.content.content.controls[4].on_click = editcon
+        page.add(up_cadastro)
+        page.update()
+
     def annotation_edit(event: ControlEvent):
         index = day_filter.selected_index
         tab_of_day = day_filter.tabs[index]
-        anotacao = Anotation(annotation_update, annotation_edit, del_line)
+        anotacao = Annotation(annotation_update, annotation_edit, del_line)
         anotacao.item_name_field.value = event.control.data[1]
         anotacao.item_count_field.value = event.control.data[3]
         anotacao.item_presentation_field.value = event.control.data[2]
@@ -177,7 +260,7 @@ def pharma_sys_note_app(page: Page):
         tab_of_day.content.controls.append(anotacao)
         page.update()
 
-    def annotation_update(line: Anotation):
+    def annotation_update(line: Annotation):
         if is_not_empty_fields(line):
             i_cnt, i_name, i_pres, i_val = get_fields_values(line)
             valid, i_val, i_cnt = check_numeric_values(i_cnt, i_val)
@@ -188,7 +271,7 @@ def pharma_sys_note_app(page: Page):
         else:
             show_alert_dialog(FILL_FIELDS)
 
-    def annotation_save(line: Anotation):
+    def annotation_save(line: Annotation):
         if is_not_empty_fields(line):
             i_cnt, i_name, i_pres, i_val = get_fields_values(line)
             valid, i_val, i_cnt = check_numeric_values(i_cnt, i_val)
@@ -207,7 +290,8 @@ def pharma_sys_note_app(page: Page):
             my_table = selected_tab.content.controls[1]
             c = conn.cursor()
             c.execute(
-                "UPDATE items SET timestamp=?, name=?, count=?, presetation=?, value=? WHERE id=?",
+                "UPDATE items SET timestamp=?, name=?, count=?, "
+                "presetation=?, value=? WHERE id=?",
                 (
                     line.timestamp.value,
                     line.item_name.value,
@@ -219,21 +303,22 @@ def pharma_sys_note_app(page: Page):
             )
             conn.commit()
             my_table.rows.clear()
-            read_db()
-            change_line_visibles(line)
+            read_sales_day()
+            change_line_visible(line)
             page.update()
-        except Exception as e:
-            print(e)
+        except Error as e:
+            open_snackbar(FAIL, colors.RED_700)
 
     def create_permanent_line(i_cnt, i_name, i_pres, i_val, line):
         set_fields_values(i_cnt, i_name, i_pres, i_val, line)
-        my_table = day_filter.tabs[day_filter.selected_index].content.controls[1]
+        my_table = day_filter.tabs[day_filter.selected_index].content.controls[
+            1]
         if insert_line(line):
             page.snack_bar = SnackBar(Text(SUCCESS), bgcolor="green")
             page.snack_bar.open = True
             my_table.rows.clear()
-            read_db()
-            change_line_visibles(line)
+            read_sales_day()
+            change_line_visible(line)
             page.update()
         else:
             page.snack_bar = SnackBar(Text(FAIL), bgcolor="red")
@@ -244,7 +329,8 @@ def pharma_sys_note_app(page: Page):
         try:
             c = conn.cursor()
             c.execute(
-                "INSERT INTO items (timestamp, name, count, presetation, value) VALUES(?,?,?,?,?)",
+                "INSERT INTO items (timestamp, name, count, presetation, "
+                "value) VALUES(?,?,?,?,?)",
                 (
                     line.timestamp.value,
                     line.item_name.value,
@@ -255,38 +341,56 @@ def pharma_sys_note_app(page: Page):
             )
             conn.commit()
             return True
-        except Exception:
+        except Error:
             return False
 
-    def read_db():
+    def read_sales_day():
         my_table = get_data_table()
+        _, cursor = get_sales_day()
+        items = cursor.fetchall()
+        if items:
+            my_table.rows.clear()
+            for item in items:
+                my_table.rows.append(
+                    DataRow(
+                        cells=[
+                            DataCell(Text(item[4])),
+                            DataCell(Text(item[1])),
+                            DataCell(Text(item[3])),
+                            DataCell(Text(item[2])),
+                            DataCell(Text(item[5])),
+                            DataCell(
+                                Row([
+                                    IconButton(
+                                        icons.EDIT,
+                                        data=item,
+                                        on_click=annotation_edit
+                                    ),
+                                    IconButton(
+                                        icons.DELETE,
+                                        data=item[0],
+                                        on_click=del_line
+                                    )
+                                ])
+                            )
+                        ]
+                    )
+                )
+        else:
+            open_snackbar(ERROR_ON_LOAD, colors.RED)
+
+    def get_sales_day():
+        op_status = None
         cursor = conn.cursor()
         data_atual = datetime.today()
         data_atual_formatada = data_atual.strftime("%d/%m/%Y")
-        query = "SELECT * FROM items WHERE SUBSTR(timestamp, 1, 10) = ?"
-        cursor.execute(query, (data_atual_formatada,))
-        items = cursor.fetchall()
-        for item in items:
-            my_table.rows.append(
-                DataRow(
-                    cells=[
-                        DataCell(Text(item[4])),
-                        DataCell(Text(item[1])),
-                        DataCell(Text(item[3])),
-                        DataCell(Text(item[2])),
-                        DataCell(Text(item[5])),
-                        DataCell(Row([
-                            IconButton(
-                                "edit", data=item, on_click=annotation_edit
-                            ),
-                            IconButton(
-                                "delete", data=item[0], on_click=del_line
-                            ),
-                        ])
-                        ),
-                    ],
-                )
-            )
+        try:
+            query = "SELECT * FROM items WHERE SUBSTR(timestamp, 1, 10) = ?"
+            cursor.execute(query, (data_atual_formatada,))
+            op_status = True
+        except Error:
+            op_status = False
+        return op_status, cursor
 
     def get_data_table():
         selected_tab = day_filter.tabs[day_filter.selected_index]
@@ -306,12 +410,12 @@ def pharma_sys_note_app(page: Page):
                 conn.commit()
                 close_dlg(event)
                 my_table.rows.clear()
-                read_db()
+                read_sales_day()
                 my_table.update()
-            except Exception as e:
-                print(e.args)
+            except Error as e:
+                open_snackbar(DELETE_ERROR, colors.ORANGE)
 
-        if isinstance(event, Anotation):
+        if isinstance(event, Annotation):
             index = day_filter.selected_index
             tab_of_day = day_filter.tabs[index]
             search_field = tab_of_day.content.controls[0]
@@ -351,7 +455,7 @@ def pharma_sys_note_app(page: Page):
         page.dialog.open = True
         page.update()
 
-    def change_line_visibles(line):
+    def change_line_visible(line):
         del day_filter.tabs[day_filter.selected_index].content.controls[4]
         line.view.visible = False
         line.control_buttons.update()
@@ -388,15 +492,19 @@ def pharma_sys_note_app(page: Page):
         except ValueError:
             show_alert_dialog(INSERT_NUMBERS)
             return False, item_value, item_count
+        except AttributeError:
+            item_value = item_value
+            return True, item_value, item_count
 
     def create_line(element):
-        anotacao = Anotation(annotation_save, annotation_edit, del_line)
+        anotacao = Annotation(annotation_save, annotation_edit, del_line)
         search_field, tab_of_day = get_search_field()
         if isinstance(element, ControlEvent):
             anotacao.item_name_field.value = search_field.search_field.value
         else:
             anotacao.item_name_field.value = element[2]
-            anotacao.item_presentation_field.value = str(element[4]).capitalize()
+            anotacao.item_presentation_field.value = str(
+                element[4]).capitalize()
             anotacao.item_value_field.value = element[-1]
 
         tab_of_day.content.controls.append(anotacao)
@@ -415,10 +523,10 @@ def pharma_sys_note_app(page: Page):
         timestamp = now.strftime("%d/%m/%Y, %H:%M:%S")
         return timestamp
 
-    def create_menu_item(icon=None, text=""):
+    def create_menu_item(icon=None, text="", callback=None):
         if not icon and not text:
             return ft.PopupMenuItem()
-        return ft.PopupMenuItem(icon=icon, text=text)
+        return ft.PopupMenuItem(icon=icon, text=text, on_click=callback)
 
     def create_popupmenubuttons():
         return [
@@ -427,6 +535,9 @@ def pharma_sys_note_app(page: Page):
                     create_menu_item(icons.LOGIN, LOGIN),
                     create_menu_item(),
                     create_menu_item(icons.PIE_CHART, CHARTS),
+                    create_menu_item(),
+                    create_menu_item(icons.PRICE_CHANGE, ALTER_PROD,
+                                     update_product),
                     create_menu_item(),
                     create_menu_item(icons.SETTINGS, CONFIGS),
                     create_menu_item(),
@@ -439,16 +550,42 @@ def pharma_sys_note_app(page: Page):
             )
         ]
 
+    def close_day(event):
+        total = 0
+
+        def closing_day(event):
+            nonlocal total
+            close_dlg(event)
+            status, cursor = get_sales_day()
+            items = cursor.fetchall()
+            if status:
+                for item in items:
+                    print(item)
+                    total += item[3] * float(item[5][3:])
+                day_filter.tabs[
+                    day_filter.selected_index].content.controls.append(
+                    Text(f'Total: R$ {total:.2f}',
+                         size=30,
+                         weight=FontWeight.BOLD)
+                )
+                page.update()
+            else:
+                open_snackbar(ERROR_ON_LOAD, colors.RED)
+            print(f'{total=:.2f}')
+
+        show_confirm_dialog(closing_day, close_dlg, event, REALLY_CLOSE,
+                            colors.RED)
+
     create_table()
     day_filter = Tabs(selected_index=0, animation_duration=300, expand=True)
-    create_day_filter_tabs(create_line, day_filter, search_engine)
+    create_day_filter_tabs(create_line, day_filter, search_engine, close_day)
     day_filter.selected_index = get_tab_day()
-
     page.appbar.actions = create_popupmenubuttons()
-    cadastro = Cadastro(savecon, hidecon)
+    cadastro = Cadastro(savecon, hidecon, NEW_REGISTER)
+    up_cadastro = Alterador(editcon, hidecon, ALTER_PRODUCT)
     rail = create_nav_rail()
     page.scroll = "allways"
-    read_db()
+    read_sales_day()
     page.add(
         Column(
             [Row([rail, ft.VerticalDivider(width=1), day_filter], expand=True)],

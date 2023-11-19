@@ -1,4 +1,5 @@
 import flet as ft
+from flet_core import CrossAxisAlignment
 
 from appstrings import PAGE_APP_BAR_TITLE, PAGE_TITLE
 from pharmasysapp import pharma_sys_note_app
@@ -6,7 +7,7 @@ from pharmasysapp import pharma_sys_note_app
 
 def main(page: ft.Page):
     page.title = PAGE_TITLE
-    page.horizontal_alignment = "center"
+    page.horizontal_alignment = CrossAxisAlignment.CENTER
     page.appbar = ft.AppBar(
         leading=ft.Icon(ft.icons.CREATE),
         leading_width=40,

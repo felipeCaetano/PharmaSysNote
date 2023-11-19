@@ -7,9 +7,9 @@ from appstrings import (CONFIRM, DELETE, PRESENTATION, Presentations,
                         PRODUCT_NAME, QUANTITY, VALUE)
 
 
-class Anotation(UserControl):
+class Annotation(UserControl):
     def __init__(self, task_save, task_edit, task_delete):
-        super(Anotation, self).__init__()
+        super(Annotation, self).__init__()
         self.view = Row()
         self.item_value = Text()
         self.item_presentation = Text()

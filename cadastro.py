@@ -1,17 +1,19 @@
 import flet
 from flet_core import (alignment, Animation, AnimationCurve, Card,
-                       Column, Container, Dropdown, dropdown, FilledButton,
-                       FontWeight, IconButton, MainAxisAlignment, Radio,
+                       colors, Column, Container, Dropdown, dropdown,
+                       FilledButton,
+                       FontWeight, IconButton, icons, MainAxisAlignment, Radio,
                        RadioGroup, Row, Text, TextField, transform)
 
 from appstrings import (DESCRIPTION, GENERIC_DRUG, LOTE, MANUFACTURER, NAME,
-                        NEW_REGISTER, NO, PRESENTATION, Presentations, PRICE,
+                        NO, PRESENTATION, Presentations, PRICE,
                         PRODUCT_CODE, SAVE, TOTAL_IN_STOCK, VALID_DATE, YES)
 
 
 class Cadastro(flet.UserControl):
-    def __init__(self, save_fn, close_fn):
+    def __init__(self, save_fn, close_fn, title):
         super(Cadastro, self).__init__()
+        self.title = title
         self.save = save_fn
         self.close = close_fn
         self.product_presentation = Dropdown(
@@ -37,9 +39,7 @@ class Cadastro(flet.UserControl):
         self.product_info = TextField(label=DESCRIPTION)
         self.product_name = TextField(label=NAME)
         self.prod_code = TextField(label=PRODUCT_CODE)
-
-    def build(self):
-        inputcon = Card(
+        self.inputcon = Card(
             offset=transform.Offset(0, 0),
             animate_offset=Animation(500, curve=AnimationCurve.EASE_IN),
             elevation=30,
@@ -47,13 +47,14 @@ class Cadastro(flet.UserControl):
                 margin=10,
                 padding=12,
                 alignment=alignment.center,
-                bgcolor="green200",
+                bgcolor=colors.GREEN_100,
                 content=Column(
                     [
                         Row([
-                            Text(NEW_REGISTER, size=20, weight=FontWeight.BOLD),
+                            Text(self.title, size=20, weight=FontWeight.BOLD),
                             IconButton(
-                                icon="close", icon_size=30, on_click=self.close
+                                icon=icons.CLOSE, icon_size=30, data=self,
+                                on_click=self.close
                             ),
                         ],
                             alignment=MainAxisAlignment.SPACE_BETWEEN,
@@ -80,4 +81,23 @@ class Cadastro(flet.UserControl):
                 ),
             ),
         )
-        return inputcon
+
+    def build(self):
+        return self.inputcon
+
+
+class Alterador(Cadastro):
+    def __init__(self, save_fn, close_fn, title):
+        super().__init__(save_fn, close_fn, title)
+        self.prod_code.suffix = IconButton(icon=icons.SEARCH, icon_size=17)
+        self.prod_code.dense = True
+        self.product_name.text_size = 18
+        self.prod_code.content_padding = self.product_name.content_padding
+        self.product_lote.text_size = 18
+        self.product_lab.cursor_height = 18
+        self.product_date.text_size = 18
+        self.product_info.text_size = 18
+        self.product_presentation.text_size = 18
+        self.product_total_cnt.text_size = 18
+        self.product_price.text_size = 18
+        self.inputcon.content.content.controls[0].controls[1].data = self
