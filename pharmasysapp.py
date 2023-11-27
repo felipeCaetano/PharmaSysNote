@@ -3,7 +3,8 @@ from datetime import datetime
 import flet as ft
 from flet_core import (Column, ControlEvent, DataCell, DataColumn, DataRow,
                        DataTable, FontWeight, IconButton, icons, Page, Row,
-                       ScrollMode, SnackBar, Tab, Tabs, Text, transform)
+                       ScrollMode, SnackBar, Tab, Tabs, Text, transform,
+                       colors, UserControl, OutlinedBorder, StadiumBorder)
 
 from annotation import Anotation
 from appstrings import (ABOUT, APP_NAME, CHARTS, COLUMN_0, COLUMN_1, COLUMN_2,
@@ -16,6 +17,8 @@ from appstrings import (ABOUT, APP_NAME, CHARTS, COLUMN_0, COLUMN_1, COLUMN_2,
 from cadastro import Cadastro
 from search_field import SearchField
 from tablesdb import conn, create_table
+
+from diversos.login_page import body
 
 days_of_week = [MONDAY, TUESDAY, WEDNESDAY, THURSDAY, FRIDAY, SATURDAY, SUNDAY]
 
@@ -54,45 +57,71 @@ def get_tab_day():
     return now.weekday()
 
 
+def create_tab_content(create_line, search_engine,  my_table):
+    return Column(
+        [
+            SearchField(create_line, search_engine),
+            my_table,
+            ft.Divider(),
+            Row([
+                ft.ElevatedButton(
+                    CLOSE_DAY, bgcolor=colors.RED, color=colors.WHITE)
+            ],
+                alignment=ft.MainAxisAlignment.END
+            )
+        ],
+        scroll=ScrollMode.ALWAYS,
+    )
+
+
+def create_tab(create_line, search_engine, my_table, day_of_week, i):
+    tab = Tab(
+            text=days_of_week[i],
+            content=create_tab_content(create_line, search_engine,  my_table)
+    )
+    if day_of_week != i:
+        tab.content.disabled = True
+    return tab
+
+
 def create_day_filter_tabs(create_line, day_filter, search_engine):
     day_of_week = get_tab_day()
     for i in range(7):
-        my_table = DataTable(
-            columns=[
-                DataColumn(Text(COLUMN_0)),
-                DataColumn(Text(COLUMN_1)),
-                DataColumn(Text(COLUMN_2)),
-                DataColumn(Text(COLUMN_3)),
-                DataColumn(Text(COLUMN_4)),
-                DataColumn(Text(COLUMN_5)),
-            ],
-            rows=[],
-        )
-
-        tab = Tab(
-            text=days_of_week[i],
-            content=Column(
-                [
-                    SearchField(create_line, search_engine),
-                    my_table,
-                    ft.Divider(),
-                    Row([
-                        ft.ElevatedButton(
-                            CLOSE_DAY, bgcolor='red', color='white')
-                    ],
-                        alignment=ft.MainAxisAlignment.END
-                    )
-                ],
-                scroll=ScrollMode.ALWAYS,
-            ),
-        )
-        if day_of_week != i:
-            tab.content.disabled = True
+        my_table = create_empty_datatable()
+        tab = create_tab(create_line, search_engine, my_table, day_of_week, i)
         day_filter.tabs.append(tab)
+
+
+def create_empty_datatable():
+    return DataTable(
+        columns=[
+            DataColumn(Text(COLUMN_0)),
+            DataColumn(Text(COLUMN_1)),
+            DataColumn(Text(COLUMN_2)),
+            DataColumn(Text(COLUMN_3)),
+            DataColumn(Text(COLUMN_4)),
+            DataColumn(Text(COLUMN_5)),
+        ],
+        rows=[],
+    )
 
 
 def pharma_sys_note_app(page: Page):
     id_edit = Text()
+    # page.route = '/login'
+    #
+    # def route_change(route):
+    #     if page.route == '/login':
+    #         page.views.append(
+    #             ft.View(
+    #                 "/login",
+    #                 [
+    #                     ft.AppBar(title=ft.Text("Login"),
+    #                               bgcolor=ft.colors.SURFACE_VARIANT),
+    #                     body
+    #                 ],
+    #             )
+    #         )
 
     def search_engine(event: ControlEvent):
         search_field, _ = get_search_field()
@@ -327,14 +356,16 @@ def pharma_sys_note_app(page: Page):
         dlg_modal = ft.AlertDialog(
             modal=True,
             title=ft.Container(
-                content=ft.Text(PLS_CONFIRME, size=15),
+                content=ft.Text(PLS_CONFIRME, size=12),
                 bgcolor=ft.colors.BLUE_GREY_200,
                 padding=10,
                 expand=True,
-                border_radius=0,
-                border=ft.border.all(1, ft.colors.BLUE_GREY_200),
+                border_radius=4,
+                border=ft.border.only(top=ft.border.BorderSide(1, "black")),
             ),
-            content=ft.Text(sys_msg, weight=FontWeight.BOLD),
+            content=ft.Container(
+                content=ft.Text(sys_msg, weight=FontWeight.BOLD),
+            ),
             actions=[
                 ft.ElevatedButton(
                     YES,
@@ -345,7 +376,7 @@ def pharma_sys_note_app(page: Page):
                 ft.ElevatedButton(NO, on_click=refuse),
             ],
             actions_alignment=ft.MainAxisAlignment.END,
-            title_padding=1,
+refa            shape=StadiumBorder
         )
         page.dialog = dlg_modal
         page.dialog.open = True
@@ -422,6 +453,7 @@ def pharma_sys_note_app(page: Page):
 
     def create_login(event):
         print("Abrir tela de login")
+        page.go('/login')
 
     def create_popupmenubuttons():
         return [
@@ -452,9 +484,14 @@ def pharma_sys_note_app(page: Page):
     rail = create_nav_rail()
     page.scroll = "allways"
     read_db()
+    # page.route = '/login'
+    # page.go(page.route)
+    # page.update()
     page.add(
         Column(
             [Row([rail, ft.VerticalDivider(width=1), day_filter], expand=True)],
             expand=True,
         )
     )
+    # page.on_route_change = route_change
+    # print(page.route)
