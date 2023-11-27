@@ -1,24 +1,22 @@
 from datetime import datetime
 
 import flet as ft
-from flet_core import (Column, ControlEvent, DataCell, DataColumn, DataRow,
-                       DataTable, FontWeight, IconButton, icons, Page, Row,
-                       ScrollMode, SnackBar, Tab, Tabs, Text, transform,
-                       colors, UserControl, OutlinedBorder, StadiumBorder)
+from flet_core import (colors, Column, ControlEvent, DataCell, DataColumn,
+                       DataRow, DataTable, FontWeight, IconButton, icons, Page,
+                       Row, ScrollMode, SnackBar, StadiumBorder, Tab, Tabs,
+                       Text, transform)
 
 from annotation import Anotation
-from appstrings import (ABOUT, APP_NAME, CHARTS, COLUMN_0, COLUMN_1, COLUMN_2,
-                        COLUMN_3, COLUMN_4, COLUMN_5, CONFIGS, DELETE_ITEM,
-                        FAIL, FILL_FIELDS, FRIDAY, FT_ANOTA, HELP,
+from appstrings import (ABOUT, APP_NAME, CHARTS, CLOSE_DAY, COLUMN_0, COLUMN_1,
+                        COLUMN_2, COLUMN_3, COLUMN_4, COLUMN_5, CONFIGS,
+                        DELETE_ITEM, FAIL, FILL_FIELDS, FRIDAY, FT_ANOTA, HELP,
                         INSERT_NUMBERS, LOGIN, LOGOUT, MONDAY, NO,
                         NOT_REGISTERED, PLS_CONFIRME, PROD_NOTFOUND, SATURDAY,
                         SUCCESS, SUNDAY, THURSDAY, TUESDAY, WANT_TO_REGISTER,
-                        WEDNESDAY, YES, CLOSE_DAY)
+                        WEDNESDAY, YES)
 from cadastro import Cadastro
 from search_field import SearchField
 from tablesdb import conn, create_table
-
-from diversos.login_page import body
 
 days_of_week = [MONDAY, TUESDAY, WEDNESDAY, THURSDAY, FRIDAY, SATURDAY, SUNDAY]
 
@@ -232,8 +230,7 @@ def pharma_sys_note_app(page: Page):
         try:
             myid = id_edit.value
             set_fields_values(i_cnt, i_name, i_pres, i_val, line)
-            selected_tab = day_filter.tabs[day_filter.selected_index]
-            my_table = selected_tab.content.controls[1]
+            # selected_tab = day_filter.tabs[day_filter.selected_index]
             c = conn.cursor()
             c.execute(
                 "UPDATE items SET timestamp=?, name=?, count=?, presetation=?, value=? WHERE id=?",
@@ -247,23 +244,23 @@ def pharma_sys_note_app(page: Page):
                 ),
             )
             conn.commit()
-            my_table.rows.clear()
-            read_db()
-            change_line_visibles(line)
-            page.update()
+            update_data_table(line)
         except Exception as e:
             print(e)
 
+    def update_data_table(line):
+        my_table = get_data_table()
+        my_table.rows.clear()
+        read_db()
+        change_line_visibles(line)
+        page.update()
+
     def create_permanent_line(i_cnt, i_name, i_pres, i_val, line):
         set_fields_values(i_cnt, i_name, i_pres, i_val, line)
-        my_table = day_filter.tabs[day_filter.selected_index].content.controls[1]
         if insert_line(line):
             page.snack_bar = SnackBar(Text(SUCCESS), bgcolor="green")
             page.snack_bar.open = True
-            my_table.rows.clear()
-            read_db()
-            change_line_visibles(line)
-            page.update()
+            update_data_table(line)
         else:
             page.snack_bar = SnackBar(Text(FAIL), bgcolor="red")
             page.snack_bar.open = True
@@ -288,33 +285,34 @@ def pharma_sys_note_app(page: Page):
             return False
 
     def read_db():
-        my_table = get_data_table()
         cursor = conn.cursor()
         data_atual = datetime.today()
         data_atual_formatada = data_atual.strftime("%d/%m/%Y")
         query = "SELECT * FROM items WHERE SUBSTR(timestamp, 1, 10) = ?"
         cursor.execute(query, (data_atual_formatada,))
         items = cursor.fetchall()
+        populate_data_table(items)
+
+    def populate_data_table(items):
+        my_table = get_data_table()
         for item in items:
-            my_table.rows.append(
-                DataRow(
-                    cells=[
-                        DataCell(Text(item[4])),
-                        DataCell(Text(item[1])),
-                        DataCell(Text(item[3])),
-                        DataCell(Text(item[2])),
-                        DataCell(Text(item[5])),
-                        DataCell(Row([
-                            IconButton(
-                                "edit", data=item, on_click=annotation_edit
-                            ),
-                            IconButton(
-                                "delete", data=item[0], on_click=del_line
-                            ),
-                        ])
-                        ),
-                    ],
-                )
+            my_table.rows.append(DataRow(cells=[
+                DataCell(Text(item[4])),
+                DataCell(Text(item[1])),
+                DataCell(Text(item[3])),
+                DataCell(Text(item[2])),
+                DataCell(Text(item[5])),
+                DataCell(Row([
+                    IconButton(
+                        "edit", data=item, on_click=annotation_edit
+                    ),
+                    IconButton(
+                        "delete", data=item[0], on_click=del_line
+                    ),
+                ])
+                ),
+            ],
+            )
             )
 
     def get_data_table():
@@ -350,18 +348,20 @@ def pharma_sys_note_app(page: Page):
             page.update()
             return
         my_table = get_data_table()
-        show_confirm_dialog(_delete, close_dlg, event, DELETE_ITEM, "red")
+        show_confirm_dialog(
+            _delete, close_dlg, event, DELETE_ITEM, colors.RED_700
+        )
 
     def show_confirm_dialog(confirm, refuse, event, sys_msg, confirm_color):
         dlg_modal = ft.AlertDialog(
             modal=True,
             title=ft.Container(
-                content=ft.Text(PLS_CONFIRME, size=12),
+                content=ft.Text(PLS_CONFIRME, size=13, weight='bold'),
                 bgcolor=ft.colors.BLUE_GREY_200,
                 padding=10,
                 expand=True,
                 border_radius=4,
-                border=ft.border.only(top=ft.border.BorderSide(1, "black")),
+                border=ft.border.only(top=ft.border.BorderSide(1, colors.BLACK54)),
             ),
             content=ft.Container(
                 content=ft.Text(sys_msg, weight=FontWeight.BOLD),
@@ -376,7 +376,6 @@ def pharma_sys_note_app(page: Page):
                 ft.ElevatedButton(NO, on_click=refuse),
             ],
             actions_alignment=ft.MainAxisAlignment.END,
-refa            shape=StadiumBorder
         )
         page.dialog = dlg_modal
         page.dialog.open = True
