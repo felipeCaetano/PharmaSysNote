@@ -192,7 +192,7 @@ def pharma_sys_note_app(page: Page):
         search_field, _ = get_search_field()
         cadastro.prod_code.value = search_field.search_field.value
         page.add(cadastro)
-        # page.update()
+        page.update()
 
     def annotation_edit(event: ControlEvent):
         index = day_filter.selected_index
@@ -355,7 +355,14 @@ def pharma_sys_note_app(page: Page):
     def show_confirm_dialog(confirm, refuse, event, sys_msg, confirm_color):
         dlg_modal = ft.AlertDialog(
             modal=True,
-            title=ft.Text(PLS_CONFIRME, size=12),
+            title=ft.Container(
+                content=ft.Text(PLS_CONFIRME, size=12),
+                bgcolor=ft.colors.BLUE_GREY_200,
+                padding=10,
+                expand=True,
+                border_radius=4,
+                border=ft.border.only(top=ft.border.BorderSide(1, "black")),
+            ),
             content=ft.Container(
                 content=ft.Text(sys_msg, weight=FontWeight.BOLD),
             ),
@@ -369,6 +376,7 @@ def pharma_sys_note_app(page: Page):
                 ft.ElevatedButton(NO, on_click=refuse),
             ],
             actions_alignment=ft.MainAxisAlignment.END,
+refa            shape=StadiumBorder
         )
         page.dialog = dlg_modal
         page.dialog.open = True
