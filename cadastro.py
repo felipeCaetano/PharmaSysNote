@@ -39,7 +39,7 @@ class Cadastro(flet.UserControl):
         self.prod_code = TextField(label=PRODUCT_CODE)
 
     def build(self):
-        inputcon = Card(
+        return Card(
             offset=transform.Offset(0, 0),
             animate_offset=Animation(500, curve=AnimationCurve.EASE_IN),
             elevation=30,
@@ -51,15 +51,14 @@ class Cadastro(flet.UserControl):
                 alignment=alignment.center,
                 bgcolor="green200",
                 content=Column(
-                    [
-                        Row([
-                            Text(NEW_REGISTER, size=20, weight=FontWeight.BOLD),
-                            IconButton(
-                                icon="close", icon_size=30, on_click=self.close
-                            ),
-                        ],
-                            alignment=MainAxisAlignment.SPACE_BETWEEN,
-                        ),
+                    [Row(
+                        [Text(NEW_REGISTER, size=20, weight=FontWeight.BOLD),
+                         IconButton(
+                             icon="close", icon_size=30, on_click=self.close
+                         ),
+                         ],
+                        alignment=MainAxisAlignment.SPACE_BETWEEN,
+                    ),
                         Row([
                             self.prod_code,
                             self.product_name,
@@ -82,4 +81,3 @@ class Cadastro(flet.UserControl):
                 ),
             ),
         )
-        return inputcon
