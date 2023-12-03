@@ -375,8 +375,7 @@ def pharma_sys_note_app(page: Page):
                 ),
                 ft.ElevatedButton(NO, on_click=refuse),
             ],
-            actions_alignment=ft.MainAxisAlignment.END,
-refa            shape=StadiumBorder
+            actions_alignment=ft.MainAxisAlignment.END
         )
         page.dialog = dlg_modal
         page.dialog.open = True
