@@ -8,6 +8,105 @@ from flet_core import (alignment, Animation, AnimationCurve, Card,
 from appstrings import (DESCRIPTION, GENERIC_DRUG, LOTE, MANUFACTURER, NAME,
                         NO, PRESENTATION, Presentations, PRICE,
                         PRODUCT_CODE, SAVE, TOTAL_IN_STOCK, VALID_DATE, YES)
+# from pharmasysapp import Controller
+
+form_style = {
+    "bgcolor": "white10",
+    "border_radius": 8,
+    "border": flet.border.all(1, '#ebebeb'),
+    "padding": 15,
+}
+
+
+def text_field():
+    return flet.TextField(
+        border_color="transparent",
+        height=20,
+        text_size=13,
+        content_padding=0,
+        cursor_color='black',
+        cursor_width=1,
+        cursor_height=18,
+        color='black'
+    )
+
+
+def text_field_container(expand, name, control):
+    return flet.Container(
+        expand=expand,
+        height=45,
+        bgcolor='#ebebeb',
+        border_radius=6,
+        padding=8,
+        content=flet.Column(
+            spacing=1,
+            controls=[
+                flet.Text(
+                    value=name,
+                    size=9,
+                    color='black',
+                    width='bold',
+                ),
+                control
+            ]
+        )
+    )
+
+
+class Form(flet.Container):
+    def __init__(self, controller):
+        super().__init__(**form_style)
+        # self.datatable = datatable
+        self.controller = controller
+        self.row1_value = text_field()
+        self.row2_value = text_field()
+        self.row3_value = text_field()
+        self.row4_value = text_field()
+
+        self.row1 = text_field_container(
+            True, "Row one", self.row1_value)
+        self.row2 = text_field_container(
+            3, "Row two", self.row2_value)
+        self.row3 = text_field_container(
+            1, "Row three", self.row3_value)
+        self.row4 = text_field_container(
+            1, "Row four", self.row4_value)
+
+        self.submit = flet.ElevatedButton(
+            text='Submit',
+            style=flet.ButtonStyle(
+                shape={"": flet.RoundedRectangleBorder(radius=8)}),
+            on_click=self.submit_data
+        )
+
+        self.content = flet.Column(
+            expand=True,
+            controls=[
+                flet.Row(controls=[self.row1]),
+                flet.Row(controls=[self.row2, self.row3, self.row4]),
+                flet.Row(controls=[self.submit], alignment='end'),
+            ],
+        )
+
+    def submit_data(self, e):
+        data = {
+            "col1": self.row1_value.value,
+            "col2": self.row2_value.value,
+            "col3": self.row3_value.value,
+            "col4": self.row4_value.value
+        }
+        # Controller.add_items(data)
+        self.controller.add_items(data)
+        self.clear_entries()
+        # self.datatable.fill_datatable()
+
+    def clear_entries(self):
+        self.row1_value.value = ""
+        self.row2_value.value = ""
+        self.row3_value.value = ""
+        self.row4_value.value = ""
+
+        self.content.update()
 
 
 class Cadastro(flet.UserControl):

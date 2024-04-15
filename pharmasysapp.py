@@ -17,7 +17,7 @@ from appstrings import (ABOUT, ALTER_PROD, ALTER_PRODUCT, APP_NAME, CHARTS,
                         PROD_NOTFOUND, REALLY_CLOSE, SATURDAY, SUCCESS, SUNDAY,
                         THURSDAY,
                         TUESDAY, WANT_TO_REGISTER, WEDNESDAY, YES)
-from cadastro import Alterador, Cadastro
+from cadastro import Alterador, Cadastro, Form
 from search_field import SearchField
 from tablesdb import conn, create_table
 
@@ -26,6 +26,53 @@ ERROR_ON_LOAD = "Erro ao carregar dados!"
 DELETE_ERROR = "Erro ao deletar!"
 
 days_of_week = [MONDAY, TUESDAY, WEDNESDAY, THURSDAY, FRIDAY, SATURDAY, SUNDAY]
+column_names = [COLUMN_0, COLUMN_1, COLUMN_2, COLUMN_3, COLUMN_4, COLUMN_5]
+
+data_table_style = {
+    "expand": True,
+    "border_radius": 8,
+    "border": ft.border.all(2, "#ebebeb"),
+    "horizontal_lines": ft.border.BorderSide(1, '#ebebeb'),
+    "columns": [
+        ft.DataColumn(
+            ft.Text(index, size=12, color='black', weight='bold')
+        )
+        for index in column_names
+    ]
+}
+
+dummy_data = {
+    0: {"Data/Hora": "18/02/1983", "Produto": "Apple","Quantidade": 5,
+        "Apresentação": "Red and Juicy",  "Valor": 1.99, "Açoes": ""},
+    # 1: {"name": "Bread", "description": "Whole wheat loaf", "quantity": 2,
+    #     "price":
+    #         3.49},
+    # 2: {"name": "Milk", "description": "Organic Whole Milk", "quantity": 1,
+    #     "price": 2.99},
+    # 3: {"name": "Carrot", "description": "Fresh and Crunchy", "quantity": 10,
+    #     "price": 0.99},
+    # 4: {"name": "Eggs", "description": "Free range Brown eggs", "quantity": 5,
+    #     "price": 1.99},
+    # 5: {"name": "Chicken", "description": "Whole wheat loaf", "quantity": 2,
+    #     "price":
+    #         3.49},
+    # 6: {"name": "Banana", "description": "Organic Whole Milk", "quantity": 1,
+    #     "price": 2.99},
+}
+
+
+class Controller:
+    items = dummy_data
+    counter = len(items)
+
+    @staticmethod
+    def get_items():
+        return Controller.items
+
+    @staticmethod
+    def add_items(item):
+        Controller.items[Controller.counter] = item
+        Controller.counter += 1
 
 
 def is_not_empty_fields(line):
@@ -57,46 +104,57 @@ def create_nav_rail():
     )
 
 
-def get_tab_day():
+def get_weekday():
     now = datetime.now()
     return now.weekday()
 
 
+class DataTable(ft.DataTable):
+    def __init__(self):
+        super().__init__(**data_table_style)
+        self.df = Controller.get_items()
+
+    def fill_datatable(self):
+        self.rows = []
+        for values in self.df.values():
+            data = ft.DataRow()
+            data.cells = [
+                ft.DataCell(
+                    ft.Text(value, color='black')
+                ) for value in values.values()
+            ]
+            self.rows.append(data)
+        # self.update()
+
+
 def create_day_filter_tabs(create_line, day_filter, search_engine, close_day):
-    day_of_week = get_tab_day()
-    for i in range(7):
-        my_table = DataTable(
-            columns=[
-                DataColumn(Text(COLUMN_0)),
-                DataColumn(Text(COLUMN_1)),
-                DataColumn(Text(COLUMN_2)),
-                DataColumn(Text(COLUMN_3)),
-                DataColumn(Text(COLUMN_4)),
-                DataColumn(Text(COLUMN_5)),
-            ],
-            rows=[],
-        )
+    day_of_week = get_weekday()
+    for day_index in range(7):
+        my_table = DataTable()
 
         tab = Tab(
-            text=days_of_week[i],
+            text=days_of_week[day_index],
             content=Column(
-                [
+                controls=[
                     SearchField(create_line, search_engine),
                     my_table,
                     ft.Divider(),
-                    Row([
-                        ft.ElevatedButton(
-                            CLOSE_DAY, bgcolor='red', color='white',
-                            on_click=close_day)
-                    ],
-                        alignment=ft.MainAxisAlignment.END
+                    Row(
+                        controls=[
+                            ft.ElevatedButton(
+                                CLOSE_DAY,
+                                bgcolor='red',
+                                color='white',
+                                on_click=close_day)
+                        ],
+                        # alignment=ft.MainAxisAlignment.END
                     )
                 ],
-                scroll=ScrollMode.ALWAYS,
-            ),
+                scroll=ScrollMode.ALWAYS
+            )
         )
-        if day_of_week != i:
-            tab.content.disabled = True
+
+        tab.content.disabled = True if day_of_week != day_index else False
         day_filter.tabs.append(tab)
 
 
@@ -198,8 +256,10 @@ def pharma_sys_note_app(page: Page):
             "INSERT INTO produtos (codigo, name, description, value, count, "
             "laboratorio, generico, lote, validade, presetation) VALUES(?,?,"
             "?,?,?,?,?,?,?,?)",
-            (i_code, i_name, i_info, i_price, i_cont, i_lab, i_validade, i_type,
-             i_lote, i_pres,))
+            (
+                i_code, i_name, i_info, i_price, i_cont, i_lab, i_validade,
+                i_type,
+                i_lote, i_pres,))
         conn.commit()
         if status:
             hidecon(cadastro)
@@ -219,7 +279,8 @@ def pharma_sys_note_app(page: Page):
         i_type = form.product_generic.value
         i_lote = form.product_lote.value
         i_pres = form.product_presentation.value
-        if all([i_name, i_code, i_info, i_price, i_cont, i_lab, i_valid, i_type,
+        if all([i_name, i_code, i_info, i_price, i_cont, i_lab, i_valid,
+                i_type,
                 i_lote, i_pres]):
             return (True, i_name, i_code, i_info, i_price, i_cont, i_lab,
                     i_valid, i_type, i_lote, i_pres)
@@ -229,7 +290,7 @@ def pharma_sys_note_app(page: Page):
                     i_valid, i_type, i_lote, i_pres)
 
     def hidecon(hide_obj):
-        hide_obj.offset = transform.Offset(2, 0)
+        hide_obj.offset = transform.Offset(0, 0)
         page.remove(hide_obj)
         page.update()
 
@@ -237,7 +298,7 @@ def pharma_sys_note_app(page: Page):
         close_dlg(event)
         cadastro.offset = transform.Offset(0, 0)
         search_field, _ = get_search_field()
-        cadastro.prod_code.value = search_field.search_field.value
+        # cadastro.prod_code.value = search_field.search_field.value
         page.add(cadastro)
         page.update()
 
@@ -349,33 +410,35 @@ def pharma_sys_note_app(page: Page):
         _, cursor = get_sales_day()
         items = cursor.fetchall()
         if items:
-            my_table.rows.clear()
-            for item in items:
-                my_table.rows.append(
-                    DataRow(
-                        cells=[
-                            DataCell(Text(item[4])),
-                            DataCell(Text(item[1])),
-                            DataCell(Text(item[3])),
-                            DataCell(Text(item[2])),
-                            DataCell(Text(item[5])),
-                            DataCell(
-                                Row([
-                                    IconButton(
-                                        icons.EDIT,
-                                        data=item,
-                                        on_click=annotation_edit
-                                    ),
-                                    IconButton(
-                                        icons.DELETE,
-                                        data=item[0],
-                                        on_click=del_line
-                                    )
-                                ])
-                            )
-                        ]
-                    )
-                )
+            Controller.items = items
+            my_table.fill_datatable()
+            # my_table.rows.clear()
+            # for item in items:
+            #     my_table.rows.append(
+            #         DataRow(
+            #             cells=[
+            #                 DataCell(Text(item[4])),
+            #                 DataCell(Text(item[1])),
+            #                 DataCell(Text(item[3])),
+            #                 DataCell(Text(item[2])),
+            #                 DataCell(Text(item[5])),
+            #                 DataCell(
+            #                     Row([
+            #                         IconButton(
+            #                             icons.EDIT,
+            #                             data=item,
+            #                             on_click=annotation_edit
+            #                         ),
+            #                         IconButton(
+            #                             icons.DELETE,
+            #                             data=item[0],
+            #                             on_click=del_line
+            #                         )
+            #                     ])
+            #                 )
+            #             ]
+            #         )
+            #     )
         else:
             open_snackbar(ERROR_ON_LOAD, colors.RED)
 
@@ -571,7 +634,6 @@ def pharma_sys_note_app(page: Page):
                 page.update()
             else:
                 open_snackbar(ERROR_ON_LOAD, colors.RED)
-            print(f'{total=:.2f}')
 
         show_confirm_dialog(closing_day, close_dlg, event, REALLY_CLOSE,
                             colors.RED)
@@ -579,16 +641,26 @@ def pharma_sys_note_app(page: Page):
     create_table()
     day_filter = Tabs(selected_index=0, animation_duration=300, expand=True)
     create_day_filter_tabs(create_line, day_filter, search_engine, close_day)
-    day_filter.selected_index = get_tab_day()
+    day_filter.selected_index = get_weekday()
     page.appbar.actions = create_popupmenubuttons()
-    cadastro = Cadastro(savecon, hidecon, NEW_REGISTER)
+    # cadastro = Cadastro(savecon, hidecon, NEW_REGISTER)
+    cadastro = Form(Controller)
     up_cadastro = Alterador(editcon, hidecon, ALTER_PRODUCT)
     rail = create_nav_rail()
-    page.scroll = "allways"
+    # page.scroll = "allways"
+    # mytable = get_data_table()
+    # mytable.fill_datatable()
     read_sales_day()
     page.add(
         Column(
-            [Row([rail, ft.VerticalDivider(width=1), day_filter], expand=True)],
             expand=True,
+            controls=[
+                Row(expand=True,
+                    controls=[
+                        rail,
+                        ft.VerticalDivider(width=1),
+                        day_filter],
+                    )],
+
         )
     )
