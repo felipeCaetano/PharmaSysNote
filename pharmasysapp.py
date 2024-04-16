@@ -16,7 +16,8 @@ from appstrings import (ABOUT, ALTER_PROD, ALTER_PRODUCT, APP_NAME, CHARTS,
                         MONDAY, NEW_REGISTER, NO, NOT_REGISTERED, PLS_CONFIRME,
                         PROD_NOTFOUND, REALLY_CLOSE, SATURDAY, SUCCESS, SUNDAY,
                         THURSDAY,
-                        TUESDAY, WANT_TO_REGISTER, WEDNESDAY, YES)
+                        TUESDAY, WANT_TO_REGISTER, WEDNESDAY, YES,
+                        PAGE_APP_BAR_TITLE)
 from cadastro import Alterador, Cadastro, Form
 from search_field import SearchField
 from tablesdb import conn, create_table
@@ -42,8 +43,8 @@ data_table_style = {
 }
 
 dummy_data = {
-    0: {"Data/Hora": "18/02/1983", "Produto": "Apple","Quantidade": 5,
-        "Apresentação": "Red and Juicy",  "Valor": 1.99, "Açoes": ""},
+    0: {"Data/Hora": "18/02/1983", "Produto": "Apple", "Quantidade": 5,
+        "Apresentação": "Red and Juicy", "Valor": 1.99, "Açoes": ""},
     # 1: {"name": "Bread", "description": "Whole wheat loaf", "quantity": 2,
     #     "price":
     #         3.49},
@@ -296,10 +297,10 @@ def pharma_sys_note_app(page: Page):
 
     def _show_cadastrar(event):
         close_dlg(event)
-        cadastro.offset = transform.Offset(0, 0)
         search_field, _ = get_search_field()
         # cadastro.prod_code.value = search_field.search_field.value
         page.add(cadastro)
+        cadastro.offset = transform.Offset(0, 0)
         page.update()
 
     def update_product(event):
@@ -445,15 +446,23 @@ def pharma_sys_note_app(page: Page):
     def get_sales_day():
         op_status = None
         cursor = conn.cursor()
-        data_atual = datetime.today()
-        data_atual_formatada = data_atual.strftime("%d/%m/%Y")
+        formated_date = get_formated_date()
         try:
-            query = "SELECT * FROM items WHERE SUBSTR(timestamp, 1, 10) = ?"
-            cursor.execute(query, (data_atual_formatada,))
-            op_status = True
+            op_status = get_sales_on_date(cursor, formated_date, op_status)
         except Error:
             op_status = False
         return op_status, cursor
+
+    def get_sales_on_date(cursor, formated_date, op_status):
+        query = "SELECT * FROM items WHERE SUBSTR(timestamp, 1, 10) = ?"
+        cursor.execute(query, (formated_date,))
+        op_status = True
+        return op_status
+
+    def get_formated_date():
+        date = datetime.today()
+        fmt_date = date.strftime("%d/%m/%Y")
+        return fmt_date
 
     def get_data_table():
         selected_tab = day_filter.tabs[day_filter.selected_index]
@@ -664,3 +673,24 @@ def pharma_sys_note_app(page: Page):
 
         )
     )
+
+
+class PharmasysApp(ft.View):
+    def __init__(self, page):
+        super().__init__(route='/app', padding=60)
+        self.page = page
+        day_filter = Tabs(selected_index=0, animation_duration=300,
+                          expand=True)
+        create_day_filter_tabs(None, day_filter, None,
+                               None)
+        day_filter.selected_index = get_weekday()
+        self.rail = create_nav_rail()
+        self.expand=True,
+        self.controls = [Row(
+            expand=True,
+            controls=[
+                self.rail,
+                ft.VerticalDivider(width=2),
+                day_filter,
+            ])
+        ]

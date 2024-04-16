@@ -8,6 +8,7 @@ from flet_core import (alignment, Animation, AnimationCurve, Card,
 from appstrings import (DESCRIPTION, GENERIC_DRUG, LOTE, MANUFACTURER, NAME,
                         NO, PRESENTATION, Presentations, PRICE,
                         PRODUCT_CODE, SAVE, TOTAL_IN_STOCK, VALID_DATE, YES)
+
 # from pharmasysapp import Controller
 
 form_style = {
@@ -15,6 +16,13 @@ form_style = {
     "border_radius": 8,
     "border": flet.border.all(1, '#ebebeb'),
     "padding": 15,
+}
+
+header_style = {
+    "height": 60,
+    "bgcolor": "#081d33",
+    "border_radius": flet.border_radius.only(top_left=15, top_right=15),
+    "padding": flet.padding.only(left=15, right=15),
 }
 
 
@@ -43,7 +51,7 @@ def text_field_container(expand, name, control):
             controls=[
                 flet.Text(
                     value=name,
-                    size=9,
+                    size=12,
                     color='black',
                     width='bold',
                 ),
@@ -53,25 +61,60 @@ def text_field_container(expand, name, control):
     )
 
 
+class Header(flet.Container):
+    ''' header class'''
+
+    def __init__(self):
+        super().__init__(**header_style)
+        self.name = flet.Text("Novo Cadastro", color='white')
+        self.avatar = flet.IconButton("Person")
+        self.close_btn = IconButton(icon=icons.CLOSE)
+        self.content = flet.Row(
+            alignment=MainAxisAlignment.SPACE_BETWEEN,
+            controls=[self.avatar, self.name, self.close_btn]
+        )
+
+    # def toggle_search(self, e):
+    #     self.search.opacity = 1 if e.data == 'true' else 0
+    #     self.search.update()
+    #
+    # def filter_dt_rows(self, e):
+    #     for data_rows in self.datable.rows:
+    #         data_cell = data_rows.cells[0]
+    #         data_rows.visible = (
+    #             True
+    #             if e.control.value.lower() in data_cell.content.value.lower()
+    #             else False
+    #         )
+    #
+    #         data_rows.update()
+
+
 class Form(flet.Container):
     def __init__(self, controller):
         super().__init__(**form_style)
-        # self.datatable = datatable
+        self.header = Header()
         self.controller = controller
-        self.row1_value = text_field()
-        self.row2_value = text_field()
-        self.row3_value = text_field()
-        self.row4_value = text_field()
+        self.row1_value = text_field()  #
+        self.row2_value = text_field()  #
+        self.row3_value = text_field()  #
+        self.row4_value = text_field()  #
+        self.row5_value = text_field()  #
+        self.row6_value = text_field()  #
+        self.row7_value = text_field()  #
+        self.row8_value = text_field()  #
+        self.row9_value = text_field()  #
 
-        self.row1 = text_field_container(
-            True, "Row one", self.row1_value)
-        self.row2 = text_field_container(
-            3, "Row two", self.row2_value)
-        self.row3 = text_field_container(
-            1, "Row three", self.row3_value)
-        self.row4 = text_field_container(
-            1, "Row four", self.row4_value)
-
+        self.row1 = text_field_container(True, PRODUCT_CODE, self.row1_value)
+        self.row2 = text_field_container(2, NAME, self.row2_value)
+        self.row3 = text_field_container(1, LOTE, self.row3_value)
+        self.row4 = text_field_container(2, DESCRIPTION, self.row4_value)
+        self.row5 = text_field_container(1, MANUFACTURER, self.row5_value)
+        self.row6 = text_field_container(1, TOTAL_IN_STOCK, self.row6_value)
+        self.row7 = text_field_container(1, PRICE, self.row7_value)
+        self.row8 = text_field_container(1, PRESENTATION, self.row8_value)
+        self.row9 = text_field_container(1, VALID_DATE, self.row9_value)
+        self.header.close_btn.on_click = self.close
         self.submit = flet.ElevatedButton(
             text='Submit',
             style=flet.ButtonStyle(
@@ -82,11 +125,16 @@ class Form(flet.Container):
         self.content = flet.Column(
             expand=True,
             controls=[
-                flet.Row(controls=[self.row1]),
-                flet.Row(controls=[self.row2, self.row3, self.row4]),
+                self.header,
+                flet.Row(controls=[self.row1, self.row2, self.row3]),
+                flet.Row(controls=[self.row4, self.row5, self.row6]),
+                flet.Row(controls=[self.row7, self.row8, self.row9]),
                 flet.Row(controls=[self.submit], alignment='end'),
             ],
         )
+
+    def close(self, event):
+        print(event.control, "fechar janela")
 
     def submit_data(self, e):
         data = {
