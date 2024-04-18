@@ -19,7 +19,7 @@ from appstrings import (ABOUT, ALTER_PROD, ALTER_PRODUCT, APP_NAME, CHARTS,
                         TUESDAY, WANT_TO_REGISTER, WEDNESDAY, YES,
                         PAGE_APP_BAR_TITLE)
 from cadastro import Alterador, Cadastro, Form
-from search_field import SearchField
+from search_field import SearchField, SearchBar
 from tablesdb import conn, create_table
 
 ERROR_ON_LOAD = "Erro ao carregar dados!"
@@ -31,6 +31,7 @@ column_names = [COLUMN_0, COLUMN_1, COLUMN_2, COLUMN_3, COLUMN_4, COLUMN_5]
 
 data_table_style = {
     "expand": True,
+    # "height": 350,
     "border_radius": 8,
     "border": ft.border.all(2, "#ebebeb"),
     "horizontal_lines": ft.border.BorderSide(1, '#ebebeb'),
@@ -45,9 +46,8 @@ data_table_style = {
 dummy_data = {
     0: {"Data/Hora": "18/02/1983", "Produto": "Apple", "Quantidade": 5,
         "Apresentação": "Red and Juicy", "Valor": 1.99, "Açoes": ""},
-    # 1: {"name": "Bread", "description": "Whole wheat loaf", "quantity": 2,
-    #     "price":
-    #         3.49},
+    1: {"Data/Hora": "18/02/1983", "Produto": "ABACAXI", "Quantidade": 10,
+        "Apresentação": "Red and Juicy", "Valor": 1.99, "Açoes": ""},
     # 2: {"name": "Milk", "description": "Organic Whole Milk", "quantity": 1,
     #     "price": 2.99},
     # 3: {"name": "Carrot", "description": "Fresh and Crunchy", "quantity": 10,
@@ -136,9 +136,15 @@ def create_day_filter_tabs(create_line, day_filter, search_engine, close_day):
         tab = Tab(
             text=days_of_week[day_index],
             content=Column(
+                expand=True,
                 controls=[
-                    SearchField(create_line, search_engine),
-                    my_table,
+                    # SearchField(create_line, search_engine),
+                    SearchBar(create_line),
+                    Column(
+                        scroll=ScrollMode.HIDDEN,
+
+                        controls=[Row(controls=[my_table])],
+                    ),
                     ft.Divider(),
                     Row(
                         controls=[
@@ -151,9 +157,11 @@ def create_day_filter_tabs(create_line, day_filter, search_engine, close_day):
                         # alignment=ft.MainAxisAlignment.END
                     )
                 ],
-                scroll=ScrollMode.ALWAYS
+                # scroll=ScrollMode.ALWAYS
             )
         )
+        # mytable = get_data_table()
+        # my_table.fill_datatable()
 
         tab.content.disabled = True if day_of_week != day_index else False
         day_filter.tabs.append(tab)
@@ -657,8 +665,8 @@ def pharma_sys_note_app(page: Page):
     up_cadastro = Alterador(editcon, hidecon, ALTER_PRODUCT)
     rail = create_nav_rail()
     # page.scroll = "allways"
-    # mytable = get_data_table()
-    # mytable.fill_datatable()
+    mytable = get_data_table()
+    mytable.fill_datatable()
     read_sales_day()
     page.add(
         Column(
@@ -685,7 +693,7 @@ class PharmasysApp(ft.View):
                                None)
         day_filter.selected_index = get_weekday()
         self.rail = create_nav_rail()
-        self.expand=True,
+        self.expand = True,
         self.controls = [Row(
             expand=True,
             controls=[

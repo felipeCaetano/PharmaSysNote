@@ -34,6 +34,6 @@ def main(page: ft.Page):
 
     page.on_route_change = router
     page.go(page.route)
-
+    page.update()
 
 ft.app(target=main)
