@@ -9,20 +9,21 @@ def main(page: ft.Page):
     page.title = PAGE_TITLE
     page.horizontal_alignment = CrossAxisAlignment.CENTER
     page.padding = 20
-    # page.appbar = ft.AppBar(
-    #     leading=ft.Icon(ft.icons.CREATE),
-    #     leading_width=40,
-    #     title=ft.Text(PAGE_APP_BAR_TITLE),
-    #     center_title=False,
-    #     bgcolor=ft.colors.SURFACE_VARIANT,
-    #
-    # )
+    page.appbar = ft.AppBar(
+        leading=ft.Icon(ft.icons.CREATE),
+        leading_width=40,
+        title=ft.Text(PAGE_APP_BAR_TITLE),
+        center_title=False,
+        bgcolor=ft.colors.SURFACE_VARIANT,
+        toolbar_height=80
+    )
 
     def router(route: ft.View):
-        page.views.clear()
+        # page.views.clear()
 
         if page.route == '/':
-            view = PharmasysApp(route.page)
+            view = PharmasysApp(page)
+            page.horizontal_alignment = "center"
             page.views.append(view)
             print("printando o app")
         else:

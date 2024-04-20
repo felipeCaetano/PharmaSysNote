@@ -685,8 +685,8 @@ def pharma_sys_note_app(page: Page):
 
 class PharmasysApp(ft.View):
     def __init__(self, page):
-        super().__init__(route='/app', padding=60)
-        self.page = page
+        super().__init__(route='/app', padding=10)
+        self.appbar = page.appbar
         day_filter = Tabs(selected_index=0, animation_duration=300,
                           expand=True)
         create_day_filter_tabs(None, day_filter, None,
