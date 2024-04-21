@@ -19,22 +19,18 @@ def main(page: ft.Page):
     )
 
     def router(route: ft.View):
-        # page.views.clear()
-
+        page.views.clear()
         if page.route == '/':
             view = PharmasysApp(page)
-            page.horizontal_alignment = "center"
             page.views.append(view)
-            print("printando o app")
         else:
             page.views.append(
                 ft.View("ERROR", [ft.Text("Algo deu errado!")])
             )
-
         page.update()
 
     page.on_route_change = router
     page.go(page.route)
-    page.update()
+    # page.update()
 
 ft.app(target=main)

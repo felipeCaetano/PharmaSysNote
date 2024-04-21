@@ -138,7 +138,6 @@ def create_day_filter_tabs(create_line, day_filter, search_engine, close_day):
             content=Column(
                 expand=True,
                 controls=[
-                    # SearchField(create_line, search_engine),
                     SearchBar(create_line),
                     Column(
                         scroll=ScrollMode.HIDDEN,
@@ -687,18 +686,33 @@ class PharmasysApp(ft.View):
     def __init__(self, page):
         super().__init__(route='/app', padding=10)
         self.appbar = page.appbar
-        day_filter = Tabs(selected_index=0, animation_duration=300,
+        self.day_filter = Tabs(selected_index=0, animation_duration=300,
                           expand=True)
-        create_day_filter_tabs(None, day_filter, None,
+        create_day_filter_tabs(self.create_annotation, self.day_filter, None,
                                None)
-        day_filter.selected_index = get_weekday()
+        self.day_filter.selected_index = get_weekday()
         self.rail = create_nav_rail()
         self.expand = True,
-        self.controls = [Row(
-            expand=True,
-            controls=[
-                self.rail,
-                ft.VerticalDivider(width=2),
-                day_filter,
-            ])
+        self.controls = [
+            Row(
+                expand=True,
+                controls=[self.rail, ft.VerticalDivider(width=2),
+                          self.day_filter]
+            )
         ]
+
+    def create_annotation(self, event: ControlEvent):
+        annotation = Annotation(None, None, None)
+        self.insert_anottation(annotation)
+
+    def insert_anottation(self, annotation):
+        tab = self.get_tab()
+        tab.content.controls.insert(-2, annotation) #append(annotation)
+        self.update()
+
+    def get_tab(self):
+        index = self.day_filter.selected_index
+        tab_of_day = self.day_filter.tabs[index]
+        return tab_of_day
+
+

@@ -80,4 +80,13 @@ class Annotation(UserControl):
         self.task_edit(self)
 
     def save_clicked(self, event: ControlEvent):
-        self.task_save(self)
+        fields = self.get_fields_values()
+        print(fields)
+        # self.task_save(self)
+
+    def get_fields_values(self):
+        item_name = self.item_name_field.value
+        item_count = self.item_count_field.value
+        item_value = self.item_value_field.value
+        item_presentation =self.item_presentation_field.value
+        return item_name, item_count, item_presentation, item_value

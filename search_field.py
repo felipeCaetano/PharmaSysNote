@@ -58,7 +58,9 @@ class SearchBar(Container):
         self.content = Row(
             spacing=15,
             vertical_alignment=CrossAxisAlignment.CENTER,
-            controls=[self.search_field_value, FloatingActionButton(icon=icons.ADD, on_click=callback)],
+            controls=[
+                self.search_field_value,
+                FloatingActionButton(icon=icons.ADD, on_click=callback)],
         )
 
     def filter_dt_rows(self, e):
