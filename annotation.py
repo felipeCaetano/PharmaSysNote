@@ -10,13 +10,15 @@ from appstrings import (CONFIRM, DELETE, PRESENTATION, Presentations,
 class Annotation(UserControl):
     def __init__(self, task_save, task_edit, task_delete):
         super(Annotation, self).__init__()
-        self.view = Row()
+        self.view = Row(alignment=MainAxisAlignment.SPACE_AROUND,
+                        expand=True, spacing=10)
+
         self.item_value = Text()
         self.item_presentation = Text()
         self.item_count = Text()
         self.item_name = Text()
-        self.timestamp = Text()
-        self.item_name_field = TextField(label=PRODUCT_NAME)
+        self.timestamp = Text("00:00:00")
+        self.item_name_field = TextField(label=PRODUCT_NAME, width=150)
         self.item_count_field = TextField(
             label=QUANTITY, keyboard_type=KeyboardType.NUMBER, width=150
         )
@@ -38,13 +40,16 @@ class Annotation(UserControl):
 
     def build(self):
         self.view.controls = [
+            self.timestamp,
             self.item_name_field,
             self.item_count_field,
             self.item_presentation_field,
             self.item_value_field,
         ]
+        self.view.alignment = MainAxisAlignment.SPACE_BETWEEN
         self.control_buttons = self.create_control_buttons()  # NOQA
-        return Row(controls=[self.view, self.control_buttons], expand=True)
+        self.view.controls.append(self.control_buttons)
+        return self.view
 
     def create_control_buttons(self):
         return Row(

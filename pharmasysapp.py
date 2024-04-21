@@ -132,7 +132,6 @@ def create_day_filter_tabs(create_line, day_filter, search_engine, close_day):
     day_of_week = get_weekday()
     for day_index in range(7):
         my_table = DataTable()
-
         tab = Tab(
             text=days_of_week[day_index],
             content=Column(
@@ -141,7 +140,6 @@ def create_day_filter_tabs(create_line, day_filter, search_engine, close_day):
                     SearchBar(create_line),
                     Column(
                         scroll=ScrollMode.HIDDEN,
-
                         controls=[Row(controls=[my_table])],
                     ),
                     ft.Divider(),
@@ -153,10 +151,10 @@ def create_day_filter_tabs(create_line, day_filter, search_engine, close_day):
                                 color='white',
                                 on_click=close_day)
                         ],
-                        # alignment=ft.MainAxisAlignment.END
+                        alignment=ft.MainAxisAlignment.END
                     )
                 ],
-                # scroll=ScrollMode.ALWAYS
+                scroll=ScrollMode.ALWAYS
             )
         )
         # mytable = get_data_table()
@@ -714,5 +712,3 @@ class PharmasysApp(ft.View):
         index = self.day_filter.selected_index
         tab_of_day = self.day_filter.tabs[index]
         return tab_of_day
-
-

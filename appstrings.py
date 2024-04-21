@@ -39,7 +39,7 @@ CONFIRM = "Confirmar"
 PRESENTATION = "Apresentação"
 VALUE = "Valor"
 QUANTITY = "Quantidade"
-PRODUCT_NAME = "Nome do Produto"
+PRODUCT_NAME = "Produto"
 
 
 class Presentations(Enum):
